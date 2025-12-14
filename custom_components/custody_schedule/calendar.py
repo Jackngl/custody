@@ -14,7 +14,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import CustodyScheduleCoordinator
-from .const import CONF_LOCATION, DOMAIN
+from .const import CONF_LOCATION, CONF_PHOTO, DOMAIN
 from .schedule import CustodyComputation, CustodyWindow
 
 
@@ -40,6 +40,9 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
             name=f"{child_name} Custody schedule",
             manufacturer="Custody Schedule",
         )
+        photo = entry.data.get(CONF_PHOTO)
+        if photo:
+            self._attr_entity_picture = photo
 
     @property
     def event(self) -> CalendarEvent | None:

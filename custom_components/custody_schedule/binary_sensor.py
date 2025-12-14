@@ -18,6 +18,7 @@ from .const import (
     ATTR_NEXT_ARRIVAL,
     ATTR_NEXT_DEPARTURE,
     ATTR_VACATION_NAME,
+    CONF_PHOTO,
     DOMAIN,
 )
 
@@ -45,6 +46,9 @@ class CustodyPresenceBinarySensor(CoordinatorEntity[CustodyComputation], BinaryS
             name=f"{child_name} Custody schedule",
             manufacturer="Custody Schedule",
         )
+        photo = entry.data.get(CONF_PHOTO)
+        if photo:
+            self._attr_entity_picture = photo
 
     @property
     def is_on(self) -> bool | None:

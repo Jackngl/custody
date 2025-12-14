@@ -23,6 +23,7 @@ from .const import (
     ATTR_NEXT_ARRIVAL,
     ATTR_NEXT_DEPARTURE,
     ATTR_VACATION_NAME,
+    CONF_PHOTO,
     DOMAIN,
 )
 
@@ -87,6 +88,9 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             manufacturer="Custody Schedule",
             configuration_url="https://www.home-assistant.io/",
         )
+        photo = entry.data.get(CONF_PHOTO)
+        if photo:
+            self._attr_entity_picture = photo
 
     @property
     def native_value(self) -> Any:

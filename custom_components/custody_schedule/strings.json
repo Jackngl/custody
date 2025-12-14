@@ -8,7 +8,7 @@
         "data": {
           "child_name": "Child name",
           "icon": "Icon (emoji or mdi:* )",
-          "photo": "Photo URL"
+          "photo": "Photo (URL or /local path)"
         }
       },
       "custody": {
@@ -43,5 +43,8 @@
         }
       }
     }
+  },
+  "error": {
+    "invalid_local_photo": "Use a URL, media source, or a file located in /config/www (accessible as /local/...)."
   }
 }

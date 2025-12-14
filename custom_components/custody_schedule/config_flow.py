@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -38,6 +39,10 @@ from .const import (
 )
 
 
+ALLOWED_PHOTO_PREFIXES = ("http://", "https://", "media-source://", "data:")
+ALLOWED_PHOTO_PREFIXES_CI = tuple(prefix.lower() for prefix in ALLOWED_PHOTO_PREFIXES)
+
+
 def _validate_time(value: str) -> str:
     """Ensure HH:MM format."""
     if isinstance(value, (int, float)):
@@ -68,11 +73,20 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Gather child information (step 1)."""
         errors: dict[str, str] = {}
         if user_input:
-            self._data.update(user_input)
-            unique_id = slugify(user_input[CONF_CHILD_NAME])
-            await self.async_set_unique_id(unique_id)
-            self._abort_if_unique_id_configured()
-            return await self.async_step_custody()
+            photo_value = user_input.get(CONF_PHOTO)
+            if photo_value:
+                normalized, error_key = self._normalize_photo(photo_value)
+                if error_key:
+                    errors[CONF_PHOTO] = error_key
+                else:
+                    user_input[CONF_PHOTO] = normalized
+
+            if not errors:
+                self._data.update(user_input)
+                unique_id = slugify(user_input[CONF_CHILD_NAME])
+                await self.async_set_unique_id(unique_id)
+                self._abort_if_unique_id_configured()
+                return await self.async_step_custody()
 
         schema = vol.Schema(
             {
@@ -139,6 +153,34 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(entry: config_entries.ConfigEntry) -> config_entries.OptionsFlowWithConfigEntry:
         """Return the options handler."""
         return CustodyScheduleOptionsFlow(entry)
+
+    def _normalize_photo(self, raw: str) -> tuple[str | None, str | None]:
+        """Allow HTTP(S) URLs, media sources or files stored in www/."""
+        value = raw.strip()
+        if not value:
+            return None, None
+
+        lowered = value.lower()
+        if lowered.startswith(ALLOWED_PHOTO_PREFIXES_CI):
+            return value, None
+
+        if value.startswith("/local/"):
+            return value, None
+        if value.startswith("local/"):
+            return f"/{value}", None
+
+        try:
+            www_dir = Path(self.hass.config.path("www")).resolve(strict=False)
+            candidate = Path(value)
+            if not candidate.is_absolute():
+                candidate = (www_dir / value).resolve(strict=False)
+            else:
+                candidate = candidate.resolve(strict=False)
+            relative = candidate.relative_to(www_dir)
+        except ValueError:
+            return None, "invalid_local_photo"
+
+        return f"/local/{relative.as_posix()}", None
 
 
 class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
