@@ -82,44 +82,38 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Gather child information (step 1)."""
         errors: dict[str, str] = {}
         if user_input:
-            # Créer un dictionnaire propre avec seulement les champs attendus
-            cleaned_input = {}
-            
-            # Traitement du nom de l'enfant
-            if CONF_CHILD_NAME in user_input:
-                name_value = user_input[CONF_CHILD_NAME]
-                if isinstance(name_value, str):
-                    display_name = name_value.strip()
-                    formatted_name = _format_child_name(display_name)
-                    if formatted_name:
-                        cleaned_input[CONF_CHILD_NAME_DISPLAY] = display_name
-                        cleaned_input[CONF_CHILD_NAME] = formatted_name
-                    else:
-                        errors[CONF_CHILD_NAME] = "invalid_child_name"
+            cleaned_input = dict(user_input)
+
+            name_value = cleaned_input.get(CONF_CHILD_NAME)
+            if isinstance(name_value, str):
+                display_name = name_value.strip()
+                formatted_name = _format_child_name(display_name)
+                if formatted_name:
+                    cleaned_input[CONF_CHILD_NAME_DISPLAY] = display_name
+                    cleaned_input[CONF_CHILD_NAME] = formatted_name
                 else:
                     errors[CONF_CHILD_NAME] = "invalid_child_name"
             else:
-                errors[CONF_CHILD_NAME] = "missing_child_name"
+                errors[CONF_CHILD_NAME] = "invalid_child_name"
 
-            # Traitement de l'icône
-            if CONF_ICON in user_input:
-                icon_value = user_input[CONF_ICON]
-                if isinstance(icon_value, str) and icon_value.startswith("mdi:"):
-                    cleaned_input[CONF_ICON] = icon_value
-                else:
-                    cleaned_input[CONF_ICON] = "mdi:account-child"  # Valeur par défaut
+            icon_value = cleaned_input.get(CONF_ICON, "mdi:account-child")
+            if isinstance(icon_value, dict):
+                icon_value = icon_value.get("icon")
+            if not isinstance(icon_value, str) or not icon_value.startswith("mdi:"):
+                errors[CONF_ICON] = "invalid_icon"
             else:
-                cleaned_input[CONF_ICON] = "mdi:account-child"  # Valeur par défaut
+                cleaned_input[CONF_ICON] = icon_value
 
-            # Traitement de la photo
-            if CONF_PHOTO in user_input and user_input[CONF_PHOTO]:
-                photo_value = user_input[CONF_PHOTO]
-                if isinstance(photo_value, str) and photo_value.strip():
+            photo_value = cleaned_input.get(CONF_PHOTO)
+            if isinstance(photo_value, str):
+                if photo_value.strip():
                     normalized, error_key = self._normalize_photo(photo_value)
                     if error_key:
                         errors[CONF_PHOTO] = error_key
                     else:
                         cleaned_input[CONF_PHOTO] = normalized
+                else:
+                    cleaned_input.pop(CONF_PHOTO, None)
 
             if not errors:
                 self._data.update(cleaned_input)
@@ -128,12 +122,11 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
                 return await self.async_step_custody()
 
-        # Utiliser un schéma plus simple pour éviter les problèmes de validation
         schema = vol.Schema(
             {
-                vol.Required(CONF_CHILD_NAME): str,
-                vol.Optional(CONF_ICON, default="mdi:account-child"): str,
-                vol.Optional(CONF_PHOTO): str,
+                vol.Required(CONF_CHILD_NAME): cv.string,
+                vol.Optional(CONF_ICON, default="mdi:account-child"): selector.IconSelector(),
+                vol.Optional(CONF_PHOTO): cv.string,
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
