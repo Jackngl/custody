@@ -233,8 +233,12 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         data = {**self._entry.data, **(self._entry.options or {})}
         schema = vol.Schema(
             {
-                vol.Optional(CONF_ARRIVAL_TIME, default=data.get(CONF_ARRIVAL_TIME, "08:00")): vol.All(cv.string, _validate_time),
-                vol.Optional(CONF_DEPARTURE_TIME, default=data.get(CONF_DEPARTURE_TIME, "19:00")): vol.All(cv.string, _validate_time),
+                vol.Optional(
+                    CONF_ARRIVAL_TIME, default=data.get(CONF_ARRIVAL_TIME, "08:00")
+                ): vol.All(cv.string, _validate_time),
+                vol.Optional(
+                    CONF_DEPARTURE_TIME, default=data.get(CONF_DEPARTURE_TIME, "19:00")
+                ): vol.All(cv.string, _validate_time),
                 vol.Optional(CONF_LOCATION, default=data.get(CONF_LOCATION, "")): cv.string,
                 vol.Optional(CONF_NOTES, default=data.get(CONF_NOTES, "")): cv.string,
             }

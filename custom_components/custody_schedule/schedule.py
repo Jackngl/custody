@@ -140,8 +140,10 @@ class CustodyScheduleManager:
                 next_departure = now_local
             next_arrival = next_window.start if next_window else None
         else:
-            next_arrival = current_window.end if current_window and current_window.end > now_local else (
-                next_window.start if next_window else None
+            next_arrival = (
+                current_window.end
+                if current_window and current_window.end > now_local
+                else (next_window.start if next_window else None)
             )
 
         days_remaining = None
@@ -217,7 +219,11 @@ class CustodyScheduleManager:
         holidays = await self._holidays.async_list(zone, now.year)
         windows: list[CustodyWindow] = []
         summer_rule = self._config.get(CONF_SUMMER_RULE)
-        rule = self._config.get(CONF_VACATION_RULE) if self._config.get(CONF_VACATION_RULE) in VACATION_RULES else None
+        rule = (
+            self._config.get(CONF_VACATION_RULE)
+            if self._config.get(CONF_VACATION_RULE) in VACATION_RULES
+            else None
+        )
         for holiday in holidays:
             start = holiday.start
             end = holiday.end
@@ -286,16 +292,44 @@ class CustodyScheduleManager:
 
         if rule == "july_first_half":
             window_end = min(end, datetime(start.year, 7, 31, tzinfo=start.tzinfo))
-            windows.append(CustodyWindow(start=start, end=window_end, label="Vacances juillet - 1ère moitié", source="summer"))
+            windows.append(
+                CustodyWindow(
+                    start=start,
+                    end=window_end,
+                    label="Vacances juillet - 1ère moitié",
+                    source="summer",
+                )
+            )
         elif rule == "july_second_half":
             window_start = datetime(start.year, 7, 16, tzinfo=start.tzinfo)
-            windows.append(CustodyWindow(start=window_start, end=datetime(start.year, 7, 31, tzinfo=start.tzinfo), label="Vacances juillet - 2ème moitié", source="summer"))
+            windows.append(
+                CustodyWindow(
+                    start=window_start,
+                    end=datetime(start.year, 7, 31, tzinfo=start.tzinfo),
+                    label="Vacances juillet - 2ème moitié",
+                    source="summer",
+                )
+            )
         elif rule == "august_first_half":
             window_end = datetime(start.year, 8, 15, tzinfo=start.tzinfo)
-            windows.append(CustodyWindow(start=datetime(start.year, 8, 1, tzinfo=start.tzinfo), end=window_end, label="Vacances août - 1ère moitié", source="summer"))
+            windows.append(
+                CustodyWindow(
+                    start=datetime(start.year, 8, 1, tzinfo=start.tzinfo),
+                    end=window_end,
+                    label="Vacances août - 1ère moitié",
+                    source="summer",
+                )
+            )
         elif rule == "august_second_half":
             window_start = datetime(start.year, 8, 16, tzinfo=start.tzinfo)
-            windows.append(CustodyWindow(start=window_start, end=min(end, datetime(start.year, 8, 31, tzinfo=start.tzinfo)), label="Vacances août - 2ème moitié", source="summer"))
+            windows.append(
+                CustodyWindow(
+                    start=window_start,
+                    end=min(end, datetime(start.year, 8, 31, tzinfo=start.tzinfo)),
+                    label="Vacances août - 2ème moitié",
+                    source="summer",
+                )
+            )
         else:
             windows.append(CustodyWindow(start=start, end=end, label=holiday.name, source="summer"))
 

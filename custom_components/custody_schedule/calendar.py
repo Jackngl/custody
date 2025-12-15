@@ -18,7 +18,9 @@ from .const import CONF_CHILD_NAME, CONF_CHILD_NAME_DISPLAY, CONF_LOCATION, CONF
 from .schedule import CustodyComputation, CustodyWindow
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
     """Set up the calendar entity."""
     coordinator: CustodyScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     child_name = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
@@ -52,11 +54,15 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
             return None
 
         now = dt_util.utcnow()
-        upcoming = sorted((window for window in data.windows if window.end > now), key=lambda window: window.start)
+        upcoming = sorted(
+            (window for window in data.windows if window.end > now), key=lambda window: window.start
+        )
         window = upcoming[0] if upcoming else None
         return self._window_to_event(window) if window else None
 
-    async def async_get_events(self, hass: HomeAssistant, start_date: datetime, end_date: datetime) -> list[CalendarEvent]:
+    async def async_get_events(
+        self, hass: HomeAssistant, start_date: datetime, end_date: datetime
+    ) -> list[CalendarEvent]:
         """Return all events within the requested range."""
         data = self.coordinator.data
         if not data:

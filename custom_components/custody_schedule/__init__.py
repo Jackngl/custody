@@ -29,6 +29,7 @@ from .const import (
 from .schedule import CustodyComputation, CustodyScheduleManager
 from .school_holidays import SchoolHolidayClient
 
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the integration (YAML not supported, placeholder only)."""
     hass.data.setdefault(DOMAIN, {})
@@ -165,7 +166,18 @@ def _register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema(
             {
                 vol.Required("entry_id"): cv.string,
-                vol.Required("dates"): vol.All(cv.ensure_list, [vol.Schema({"start": cv.datetime, "end": cv.datetime, vol.Optional("label"): cv.string})]),
+                vol.Required("dates"): vol.All(
+                    cv.ensure_list,
+                    [
+                        vol.Schema(
+                            {
+                                "start": cv.datetime,
+                                "end": cv.datetime,
+                                vol.Optional("label"): cv.string,
+                            }
+                        )
+                    ],
+                ),
             }
         ),
     )
