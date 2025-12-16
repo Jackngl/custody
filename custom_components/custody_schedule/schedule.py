@@ -384,14 +384,6 @@ class CustodyScheduleManager:
                     source="summer",
                 )
             )
-        elif rule == "july_even_weeks":
-            windows.extend(self._summer_week_parity_windows(start, end, target_parity=0, month=7))
-        elif rule == "july_odd_weeks":
-            windows.extend(self._summer_week_parity_windows(start, end, target_parity=1, month=7))
-        elif rule == "august_even_weeks":
-            windows.extend(self._summer_week_parity_windows(start, end, target_parity=0, month=8))
-        elif rule == "august_odd_weeks":
-            windows.extend(self._summer_week_parity_windows(start, end, target_parity=1, month=8))
         elif rule in ("august_even_weeks", "august_odd_weeks"):
             windows.extend(
                 self._summer_week_parity_windows(
