@@ -49,15 +49,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     config = {**entry.data, **(entry.options or {})}
     api_url = config.get(CONF_HOLIDAY_API_URL) or HOLIDAY_API
     
-    # Create holiday client with custom API URL if configured
-    # Each entry can have its own API URL, but we share the client instance
-    # If API URL changes, we need to recreate the client
-    holidays: SchoolHolidayClient | None = hass.data[DOMAIN].get("holidays")
-    stored_api_url = hass.data[DOMAIN].get("holiday_api_url")
-    if holidays is None or stored_api_url != api_url:
-        holidays = SchoolHolidayClient(hass, api_url)
-        hass.data[DOMAIN]["holidays"] = holidays
-        hass.data[DOMAIN]["holiday_api_url"] = api_url
+    # Store clients by API URL to support multiple entries with different API URLs
+    # Multiple entries can share the same client if they use the same API URL (benefits from shared cache)
+    holiday_clients: dict[str, SchoolHolidayClient] = hass.data[DOMAIN].setdefault("holiday_clients", {})
+    
+    if api_url not in holiday_clients:
+        holiday_clients[api_url] = SchoolHolidayClient(hass, api_url)
+        LOGGER.debug("Created new holiday client for API URL: %s", api_url)
+    
+    holidays = holiday_clients[api_url]
     
     manager = CustodyScheduleManager(hass, config, holidays)
     coordinator = CustodyScheduleCoordinator(hass, manager, entry)
@@ -228,7 +228,13 @@ def _register_services(hass: HomeAssistant) -> None:
         else:
             api_url = HOLIDAY_API
         
-        holidays = SchoolHolidayClient(hass, api_url)
+        # Use shared client if available, otherwise create a temporary one for testing
+        holiday_clients: dict[str, SchoolHolidayClient] = hass.data[DOMAIN].get("holiday_clients", {})
+        if api_url in holiday_clients:
+            holidays = holiday_clients[api_url]
+        else:
+            holidays = SchoolHolidayClient(hass, api_url)
+        
         result = await holidays.async_test_connection(zone, year)
         
         # Log the result
