@@ -1,11 +1,15 @@
 {
   "domain": "custody_schedule",
   "name": "Custody Schedule",
-  "version": "1.0.5",
-  "after_dependencies": ["calendar"],
+  "version": "1.0.6",
+  "after_dependencies": [
+    "calendar"
+  ],
   "documentation": "https://github.com/Jackngl/custody-v1",
   "issue_tracker": "https://github.com/Jackngl/custody-v1/issues",
-  "codeowners": ["@Jackngl"],
+  "codeowners": [
+    "@Jackngl"
+  ],
   "config_flow": true,
   "iot_class": "local_polling",
   "integration_type": "helper",
