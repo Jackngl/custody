@@ -34,6 +34,7 @@ from .const import (
     CUSTODY_TYPES,
     DOMAIN,
     FRENCH_ZONES,
+    FRENCH_ZONES_WITH_CITIES,
     REFERENCE_YEARS,
     SUMMER_RULES,
     VACATION_RULES,
@@ -44,12 +45,43 @@ ALLOWED_PHOTO_PREFIXES = ("http://", "https://", "media-source://", "data:")
 ALLOWED_PHOTO_PREFIXES_CI = tuple(prefix.lower() for prefix in ALLOWED_PHOTO_PREFIXES)
 
 
+def _validate_time(value: str) -> str:
+    """Ensure HH:MM format."""
+    if isinstance(value, (int, float)):
+        raise vol.Invalid("Expected HH:MM string")
+    parts = str(value).split(":")
+    if len(parts) != 2:
+        raise vol.Invalid("Use HH:MM format")
+    hour, minute = parts
+    try:
+        hour_i = int(hour)
+        minute_i = int(minute)
+    except ValueError as err:
+        raise vol.Invalid("Invalid time digits") from err
+    if not 0 <= hour_i <= 23 or not 0 <= minute_i <= 59:
+        raise vol.Invalid("Time must be within 00:00-23:59")
+    return f"{hour_i:02d}:{minute_i:02d}"
+
+
 def _format_child_name(value: str) -> str:
     """Normalize child name to ASCII words recognized by Home Assistant."""
     normalized = slugify(value, separator=" ").strip()
     if not normalized:
         return ""
     return " ".join(part.capitalize() for part in normalized.split())
+
+
+def _zone_selector() -> selector.SelectSelector:
+    """Create a zone selector with city labels."""
+    options_list = [
+        {"value": zone, "label": FRENCH_ZONES_WITH_CITIES.get(zone, zone)} for zone in FRENCH_ZONES
+    ]
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=options_list,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
 
 
 def _time_to_str(value: Any, default: str) -> str:
@@ -161,7 +193,7 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_ZONE, default="A"): vol.In(FRENCH_ZONES),
+                vol.Required(CONF_ZONE, default="A"): _zone_selector(),
                 vol.Optional(CONF_VACATION_RULE): vol.In(VACATION_RULES),
                 vol.Optional(CONF_SUMMER_RULE): vol.In(SUMMER_RULES),
             }
@@ -225,23 +257,75 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, entry: config_entries.ConfigEntry) -> None:
         self._entry = entry
+        self._data: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Single step options form."""
+        """Show options menu."""
+        return self.async_show_menu(
+            step_id="init",
+            menu_options={
+                "schedule": "Horaires et lieu",
+                "vacations": "Zone scolaire et règles vacances",
+                "advanced": "Options avancées",
+            },
+        )
+
+    async def async_step_schedule(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Modify schedule times and location."""
         if user_input:
-            return self.async_create_entry(title="", data=user_input)
+            cleaned = dict(user_input)
+            cleaned[CONF_ARRIVAL_TIME] = _time_to_str(user_input.get(CONF_ARRIVAL_TIME), "08:00")
+            cleaned[CONF_DEPARTURE_TIME] = _time_to_str(user_input.get(CONF_DEPARTURE_TIME), "19:00")
+            self._data.update(cleaned)
+            return self.async_create_entry(title="", data=self._data)
 
         data = {**self._entry.data, **(self._entry.options or {})}
         schema = vol.Schema(
             {
-                vol.Optional(
+                vol.Required(
                     CONF_ARRIVAL_TIME, default=data.get(CONF_ARRIVAL_TIME, "08:00")
-                ): vol.All(cv.string, _validate_time),
-                vol.Optional(
+                ): selector.TimeSelector(),
+                vol.Required(
                     CONF_DEPARTURE_TIME, default=data.get(CONF_DEPARTURE_TIME, "19:00")
-                ): vol.All(cv.string, _validate_time),
+                ): selector.TimeSelector(),
                 vol.Optional(CONF_LOCATION, default=data.get(CONF_LOCATION, "")): cv.string,
-                vol.Optional(CONF_NOTES, default=data.get(CONF_NOTES, "")): cv.string,
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(step_id="schedule", data_schema=schema)
+
+    async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Modify school zone and vacation rules."""
+        if user_input:
+            self._data.update(user_input)
+            return self.async_create_entry(title="", data=self._data)
+
+        data = {**self._entry.data, **(self._entry.options or {})}
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_ZONE, default=data.get(CONF_ZONE, "A")): _zone_selector(),
+                vol.Optional(CONF_VACATION_RULE, default=data.get(CONF_VACATION_RULE)): vol.In(
+                    [None] + VACATION_RULES
+                ),
+                vol.Optional(CONF_SUMMER_RULE, default=data.get(CONF_SUMMER_RULE)): vol.In(
+                    [None] + SUMMER_RULES
+                ),
+            }
+        )
+        return self.async_show_form(step_id="vacations", data_schema=schema)
+
+    async def async_step_advanced(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Advanced optional settings."""
+        if user_input:
+            self._data.update(user_input)
+            return self.async_create_entry(title="", data=self._data)
+
+        data = {**self._entry.data, **(self._entry.options or {})}
+        schema = vol.Schema(
+            {
+                vol.Optional(CONF_NOTES, default=data.get(CONF_NOTES, "")): cv.string,
+                vol.Optional(CONF_NOTIFICATIONS, default=data.get(CONF_NOTIFICATIONS, False)): cv.boolean,
+                vol.Optional(CONF_CALENDAR_SYNC, default=data.get(CONF_CALENDAR_SYNC, False)): cv.boolean,
+                vol.Optional(CONF_EXCEPTIONS, default=data.get(CONF_EXCEPTIONS, "")): cv.string,
+            }
+        )
+        return self.async_show_form(step_id="advanced", data_schema=schema)

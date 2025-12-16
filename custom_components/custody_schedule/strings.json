@@ -51,15 +51,36 @@
   },
   "options": {
     "step": {
-      "vacations": {
+      "init": {
+        "title": "Options du planning de garde",
+        "description": "Choisissez ce que vous souhaitez modifier."
+      },
+      "schedule": {
+        "title": "Horaires et lieu",
+        "description": "Modifier les horaires d'arrivée/départ et le lieu d'échange.",
         "data": {
-          "zone": {
-            "A": "Zone A — Besançon, Bordeaux, Clermont-Ferrand, Dijon, Grenoble, Limoges, Lyon, Poitiers",
-            "B": "Zone B — Aix-Marseille, Amiens, Lille, Nancy-Metz, Nantes, Nice, Normandie, Orléans-Tours, Reims, Rennes, Strasbourg",
-            "C": "Zone C — Créteil, Montpellier, Paris, Toulouse, Versailles",
-            "Corse": "Corse",
-            "DOM-TOM": "DOM-TOM"
-          }
+          "arrival_time": "Heure d'arrivée",
+          "departure_time": "Heure de départ",
+          "location": "Lieu d'échange"
+        }
+      },
+      "vacations": {
+        "title": "Zone scolaire et règles vacances",
+        "description": "Modifier la zone scolaire (API) et les règles pendant les vacances.",
+        "data": {
+          "zone": "Zone scolaire",
+          "vacation_rule": "Règle vacances",
+          "summer_rule": "Règle grandes vacances"
+        }
+      },
+      "advanced": {
+        "title": "Options avancées",
+        "description": "Fonctionnalités optionnelles et notes.",
+        "data": {
+          "notes": "Notes",
+          "notifications": "Activer les notifications",
+          "calendar_sync": "Activer la synchro Google Calendar (placeholder)",
+          "exceptions": "Exceptions personnalisées"
         }
       }
     }
