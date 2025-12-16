@@ -186,13 +186,53 @@ class CustodyScheduleManager:
         )
 
     async def _build_windows(self, now: datetime) -> list[CustodyWindow]:
-        """Generate presence windows from base pattern and vacation/custom rules."""
+        """Generate presence windows from base pattern and vacation/custom rules.
+        
+        Priority: Vacation rules > Custom rules > Normal pattern rules
+        If a vacation period overlaps with a normal pattern window, the normal window
+        is completely replaced by the vacation window for the entire vacation period.
+        """
         pattern_windows = self._generate_pattern_windows(now)
         vacation_windows = await self._generate_vacation_windows(now)
         custom_windows = self._load_custom_rules()
 
-        merged = pattern_windows + vacation_windows + custom_windows
+        # Filter out pattern windows that overlap with vacation periods
+        # Vacation rules have priority and completely replace normal rules during vacations
+        filtered_pattern_windows = self._filter_windows_by_vacations(pattern_windows, vacation_windows)
+        
+        # Merge: vacation windows (highest priority), then custom, then filtered pattern
+        merged = vacation_windows + custom_windows + filtered_pattern_windows
         return [window for window in merged if window.end > now - timedelta(days=1)]
+    
+    def _filter_windows_by_vacations(
+        self, pattern_windows: list[CustodyWindow], vacation_windows: list[CustodyWindow]
+    ) -> list[CustodyWindow]:
+        """Remove pattern windows that overlap with vacation periods.
+        
+        Vacation periods completely replace normal custody rules.
+        If a pattern window overlaps (even partially) with any vacation window,
+        it is removed entirely.
+        """
+        if not vacation_windows:
+            return pattern_windows
+        
+        # Build a list of vacation periods (start, end) for quick overlap checking
+        vacation_periods = [(vw.start, vw.end) for vw in vacation_windows]
+        
+        filtered = []
+        for pattern_window in pattern_windows:
+            # Check if this pattern window overlaps with any vacation period
+            overlaps = False
+            for vac_start, vac_end in vacation_periods:
+                # Check for overlap: windows overlap if one starts before the other ends
+                if pattern_window.start < vac_end and pattern_window.end > vac_start:
+                    overlaps = True
+                    break
+            
+            if not overlaps:
+                filtered.append(pattern_window)
+        
+        return filtered
 
     def _generate_pattern_windows(self, now: datetime) -> list[CustodyWindow]:
         """Create repeating windows from the selected custody type."""
@@ -285,25 +325,38 @@ class CustodyScheduleManager:
             if not rule or applied:
                 continue
 
+            # Apply arrival/departure times to vacation windows
+            # For most rules, we use the configured arrival/departure times
             window_start = start
             if rule == "first_week":
+                window_start = self._apply_time(start, self._arrival_time)
                 window_end = min(end, start + timedelta(days=7))
+                window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "second_week":
                 window_start = start + timedelta(days=7)
+                window_start = self._apply_time(window_start, self._arrival_time)
                 window_end = min(end, window_start + timedelta(days=7))
+                window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "first_half":
+                window_start = self._apply_time(start, self._arrival_time)
                 window_end = start + (end - start) / 2
+                window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "second_half":
                 window_start = start + (end - start) / 2
-                window_end = end
+                window_start = self._apply_time(window_start, self._arrival_time)
+                window_end = self._apply_time(end, self._departure_time)
             elif rule == "even_weeks":
                 if int(start.strftime("%U")) % 2 != 0:
                     window_start = start + timedelta(days=7)
+                window_start = self._apply_time(window_start, self._arrival_time)
                 window_end = min(end, window_start + timedelta(days=7))
+                window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "odd_weeks":
                 if int(start.strftime("%U")) % 2 == 0:
                     window_start = start + timedelta(days=7)
+                window_start = self._apply_time(window_start, self._arrival_time)
                 window_end = min(end, window_start + timedelta(days=7))
+                window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "even_weekends":
                 # Week-ends des semaines paires (samedi-dimanche)
                 # Trouver le samedi de la semaine de début
@@ -343,25 +396,35 @@ class CustodyScheduleManager:
             elif rule == "july":
                 if start.month != 7 and end.month != 7:
                     continue
+                window_start = self._apply_time(start, self._arrival_time)
                 window_end = min(end, datetime(start.year, 7, 31, tzinfo=start.tzinfo))
+                window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "august":
                 if start.month != 8 and end.month != 8:
                     continue
+                window_start = self._apply_time(start, self._arrival_time)
                 window_end = min(end, datetime(start.year, 8, 31, tzinfo=start.tzinfo))
+                window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "first_week_even_year":
                 if start.year % 2 == 0:
+                    window_start = self._apply_time(start, self._arrival_time)
                     window_end = min(end, start + timedelta(days=7))
+                    window_end = self._apply_time(window_end, self._departure_time)
                 else:
                     continue
             elif rule == "first_week_odd_year":
                 if start.year % 2 == 1:
+                    window_start = self._apply_time(start, self._arrival_time)
                     window_end = min(end, start + timedelta(days=7))
+                    window_end = self._apply_time(window_end, self._departure_time)
                 else:
                     continue
             elif rule == "second_week_even_year":
                 if start.year % 2 == 0:
                     window_start = start + timedelta(days=7)
+                    window_start = self._apply_time(window_start, self._arrival_time)
                     window_end = min(end, window_start + timedelta(days=7))
+                    window_end = self._apply_time(window_end, self._departure_time)
                     if window_end <= window_start:
                         continue
                 else:
@@ -369,13 +432,16 @@ class CustodyScheduleManager:
             elif rule == "second_week_odd_year":
                 if start.year % 2 == 1:
                     window_start = start + timedelta(days=7)
+                    window_start = self._apply_time(window_start, self._arrival_time)
                     window_end = min(end, window_start + timedelta(days=7))
+                    window_end = self._apply_time(window_end, self._departure_time)
                     if window_end <= window_start:
                         continue
                 else:
                     continue
             else:
-                window_end = end
+                window_start = self._apply_time(start, self._arrival_time)
+                window_end = self._apply_time(end, self._departure_time)
 
             if window_end <= window_start:
                 continue
