@@ -82,11 +82,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate with HACS
+      - name: Debug HACS validation
         run: |
-          echo "::group::HACS Validation"
+          echo "::group::HACS Validation Info"
           echo "Repository: ${{ github.repository }}"
           echo "Ref: ${{ github.ref }}"
+          echo "::endgroup::"
+
+      - name: Validate with HACS
         uses: hacs/action@main
         with:
           category: integration
@@ -96,10 +99,11 @@ jobs:
       - name: HACS Validation Result
         if: always()
         run: |
-          echo "::endgroup::"
+          echo "::group::HACS Validation Result"
           if [ "${{ job.status }}" = "success" ]; then
             echo "✓ HACS validation passed"
           else
             echo "✗ HACS validation failed"
             exit 1
           fi
+          echo "::endgroup::"
