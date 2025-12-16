@@ -27,6 +27,7 @@ from .const import (
     ATTR_NEXT_VACATION_START,
     ATTR_NEXT_VACATION_END,
     ATTR_DAYS_UNTIL_VACATION,
+    ATTR_SCHOOL_HOLIDAYS_RAW,
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
     CONF_PHOTO,
@@ -149,6 +150,7 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             ATTR_NEXT_VACATION_START: self._format_datetime(data.next_vacation_start),
             ATTR_NEXT_VACATION_END: self._format_datetime(data.next_vacation_end),
             ATTR_DAYS_UNTIL_VACATION: data.days_until_vacation,
+            ATTR_SCHOOL_HOLIDAYS_RAW: data.school_holidays_raw,
         }
         attrs.update(data.attributes)
         return {key: value for key, value in attrs.items() if value is not None}

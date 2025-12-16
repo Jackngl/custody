@@ -48,7 +48,8 @@
   "error": {
     "invalid_local_photo": "Utilisez une URL, une source média ou placez l'image dans /config/www pour qu'elle soit accessible via /local/...",
     "invalid_child_name": "Saisissez au moins une lettre ou un chiffre (les accents sont supprimés automatiquement).",
-    "invalid_icon": "Choisissez une icône mdi:*."
+    "invalid_icon": "Choisissez une icône mdi:*.",
+    "api_url_missing_placeholders": "L'URL de l'API doit contenir les placeholders {year} et {zone}."
   },
   "options": {
     "step": {

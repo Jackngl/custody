@@ -21,6 +21,7 @@ from .const import (
     ATTR_NEXT_VACATION_START,
     ATTR_NEXT_VACATION_END,
     ATTR_DAYS_UNTIL_VACATION,
+    ATTR_SCHOOL_HOLIDAYS_RAW,
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
     CONF_PHOTO,
@@ -79,4 +80,5 @@ class CustodyPresenceBinarySensor(CoordinatorEntity[CustodyComputation], BinaryS
             ATTR_NEXT_VACATION_START: data.next_vacation_start.isoformat() if data.next_vacation_start else None,
             ATTR_NEXT_VACATION_END: data.next_vacation_end.isoformat() if data.next_vacation_end else None,
             ATTR_DAYS_UNTIL_VACATION: data.days_until_vacation,
+            ATTR_SCHOOL_HOLIDAYS_RAW: data.school_holidays_raw,
         }

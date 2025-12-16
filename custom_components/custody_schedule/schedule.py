@@ -55,6 +55,7 @@ class CustodyComputation:
     next_vacation_start: datetime | None = None
     next_vacation_end: datetime | None = None
     days_until_vacation: int | None = None
+    school_holidays_raw: list[dict[str, Any]] = field(default_factory=list)
     windows: list[CustodyWindow] = field(default_factory=list)
     attributes: dict[str, Any] = field(default_factory=dict)
 
@@ -159,8 +160,8 @@ class CustodyScheduleManager:
 
         period, vacation_name = await self._determine_period(now_local)
         
-        # Get next vacation information
-        next_vacation_name, next_vacation_start, next_vacation_end, days_until_vacation = await self._get_next_vacation(now_local)
+        # Get next vacation information and raw holidays data
+        next_vacation_name, next_vacation_start, next_vacation_end, days_until_vacation, school_holidays_raw = await self._get_next_vacation(now_local)
 
         attributes = {
             ATTR_LOCATION: self._config.get(CONF_LOCATION),
@@ -179,6 +180,7 @@ class CustodyScheduleManager:
             next_vacation_start=next_vacation_start,
             next_vacation_end=next_vacation_end,
             days_until_vacation=days_until_vacation,
+            school_holidays_raw=school_holidays_raw,
             windows=windows,
             attributes=attributes,
         )
@@ -195,8 +197,6 @@ class CustodyScheduleManager:
     def _generate_pattern_windows(self, now: datetime) -> list[CustodyWindow]:
         """Create repeating windows from the selected custody type."""
         custody_type = self._config.get("custody_type", "alternate_week")
-        from .const import LOGGER
-        LOGGER.debug("Generating pattern windows with custody_type: %s", custody_type)
         type_def = CUSTODY_TYPES.get(custody_type) or CUSTODY_TYPES["alternate_week"]
         horizon = now + timedelta(days=90)
 
@@ -599,27 +599,38 @@ class CustodyScheduleManager:
 
         return "school", None
 
-    async def _get_next_vacation(self, now: datetime) -> tuple[str | None, datetime | None, datetime | None, int | None]:
+    async def _get_next_vacation(self, now: datetime) -> tuple[str | None, datetime | None, datetime | None, int | None, list[dict[str, Any]]]:
         """Return information about the next upcoming vacation.
         
         If currently in vacation, returns the current vacation.
         Otherwise, returns the next vacation that hasn't started yet.
         
         Adjusts the start date based on school level:
-        - Primary: Friday afternoon (departure time) before the official Saturday
+        - Primary: Friday afternoon (departure time) - API already returns Friday
         - Middle/High: Saturday at arrival time
         
         Returns:
-            (name, start_date, end_date, days_until)
+            (name, start_date, end_date, days_until, raw_holidays_list)
         """
         zone = self._config.get(CONF_ZONE)
         if not zone:
-            return None, None, None, None
+            return None, None, None, None, []
 
         holidays = await self._holidays.async_list(zone, now.year)
         
         # Sort holidays by start date
         sorted_holidays = sorted(holidays, key=lambda h: h.start)
+        
+        # Build raw holidays list for debugging/display
+        school_holidays_raw = []
+        for holiday in sorted_holidays:
+            school_holidays_raw.append({
+                "name": holiday.name,
+                "start": holiday.start.isoformat(),
+                "end": holiday.end.isoformat(),
+                "start_weekday": holiday.start.strftime("%A"),
+                "end_weekday": holiday.end.strftime("%A"),
+            })
         
         # Get school level (default to primary)
         school_level = self._config.get(CONF_SCHOOL_LEVEL, "primary")
@@ -641,6 +652,7 @@ class CustodyScheduleManager:
                 adjusted_start,
                 current_vacation.end,
                 0,  # Already in vacation
+                school_holidays_raw,
             )
         
         # Not in vacation, find the next one
@@ -652,7 +664,7 @@ class CustodyScheduleManager:
                 break
         
         if not next_vacation:
-            return None, None, None, None
+            return None, None, None, None, school_holidays_raw
         
         # Calculate days until vacation using adjusted start
         delta = adjusted_start - now
@@ -663,19 +675,20 @@ class CustodyScheduleManager:
             adjusted_start,
             next_vacation.end,
             days_until,
+            school_holidays_raw,
         )
     
     def _adjust_vacation_start(self, official_start: datetime, school_level: str) -> datetime:
         """Adjust vacation start date based on school level.
         
         - Primary: Friday afternoon (departure time)
-          - If API returns Friday, use it directly
-          - If API returns Saturday, go back 1 day to Friday
-          - Otherwise, find the Friday before the official start
-        - Middle/High: Saturday at arrival time (or official start if it's Saturday)
+          - L'API retourne déjà le vendredi, on utilise directement cette date avec l'heure de départ
+        - Middle/High: Saturday at arrival time
+          - Si l'API retourne samedi, on l'utilise directement
+          - Sinon, on trouve le samedi suivant
         
         Args:
-            official_start: Official vacation start date from API (usually Friday or Saturday)
+            official_start: Official vacation start date from API (déjà le vendredi pour primaire, samedi pour collège/lycée)
             school_level: "primary", "middle", or "high"
         
         Returns:
@@ -683,23 +696,8 @@ class CustodyScheduleManager:
         """
         if school_level == "primary":
             # Primary: Friday afternoon at departure time
-            # L'API retourne généralement le vendredi ou le samedi comme date de début
-            weekday = official_start.weekday()
-            if weekday == 4:  # Friday - L'API retourne déjà le vendredi, on l'utilise directement
-                friday = official_start
-            elif weekday == 5:  # Saturday - L'API retourne le samedi, on recule d'1 jour pour avoir le vendredi
-                friday = official_start - timedelta(days=1)
-            elif weekday == 6:  # Sunday
-                friday = official_start - timedelta(days=2)
-            else:  # Monday (0) through Thursday (3)
-                # Go back to the Friday of the previous week
-                # Monday: 3 days back = Friday of previous week
-                # Tuesday: 4 days back = Friday of previous week
-                # Wednesday: 5 days back = Friday of previous week
-                # Thursday: 6 days back = Friday of previous week
-                days_back = weekday + 3
-                friday = official_start - timedelta(days=days_back)
-            return self._apply_time(friday, self._departure_time)
+            # L'API retourne déjà le vendredi, on utilise directement cette date avec l'heure de départ
+            return self._apply_time(official_start, self._departure_time)
         else:
             # Middle/High: Saturday at arrival time
             # If official_start is Saturday, use it; otherwise find the next Saturday
