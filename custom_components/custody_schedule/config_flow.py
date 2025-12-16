@@ -91,8 +91,11 @@ def _school_level_selector() -> selector.SelectSelector:
     """Return selector for school level."""
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
-            options=["primary", "middle", "high"],
-            translation_key="school_level",
+            options=[
+                {"value": "primary", "label": "Primaire"},
+                {"value": "middle", "label": "Collège"},
+                {"value": "high", "label": "Lycée"},
+            ],
             mode=selector.SelectSelectorMode.DROPDOWN,
         )
     )

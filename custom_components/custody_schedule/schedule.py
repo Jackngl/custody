@@ -668,11 +668,14 @@ class CustodyScheduleManager:
     def _adjust_vacation_start(self, official_start: datetime, school_level: str) -> datetime:
         """Adjust vacation start date based on school level.
         
-        - Primary: Friday afternoon (departure time) before the official start
+        - Primary: Friday afternoon (departure time)
+          - If API returns Friday, use it directly
+          - If API returns Saturday, go back 1 day to Friday
+          - Otherwise, find the Friday before the official start
         - Middle/High: Saturday at arrival time (or official start if it's Saturday)
         
         Args:
-            official_start: Official vacation start date from API (usually Saturday)
+            official_start: Official vacation start date from API (usually Friday or Saturday)
             school_level: "primary", "middle", or "high"
         
         Returns:
@@ -680,16 +683,14 @@ class CustodyScheduleManager:
         """
         if school_level == "primary":
             # Primary: Friday afternoon at departure time
-            # Find the Friday before the official start date
-            # If official_start is Saturday, go back 1 day to Friday
-            # If official_start is Sunday-Friday, find the previous Friday
+            # L'API retourne généralement le vendredi ou le samedi comme date de début
             weekday = official_start.weekday()
-            if weekday == 5:  # Saturday
+            if weekday == 4:  # Friday - L'API retourne déjà le vendredi, on l'utilise directement
+                friday = official_start
+            elif weekday == 5:  # Saturday - L'API retourne le samedi, on recule d'1 jour pour avoir le vendredi
                 friday = official_start - timedelta(days=1)
             elif weekday == 6:  # Sunday
                 friday = official_start - timedelta(days=2)
-            elif weekday == 4:  # Friday
-                friday = official_start - timedelta(days=7)  # Previous Friday
             else:  # Monday (0) through Thursday (3)
                 # Go back to the Friday of the previous week
                 # Monday: 3 days back = Friday of previous week
