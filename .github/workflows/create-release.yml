@@ -1,12 +1,12 @@
-name: Tag on main
+name: Create Release on Tag
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
-  tag:
+  create-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -16,41 +16,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read version from manifest
+      - name: Extract version from tag
         id: version
         run: |
-          VERSION=$(python - <<'PY'
-import json, pathlib
-manifest = pathlib.Path("custom_components/custody_schedule/manifest.json")
-data = json.loads(manifest.read_text(encoding="utf-8"))
-print(data.get("version", "").strip())
-PY
-)
-          if [ -z "$VERSION" ]; then
-            echo "Version not found in manifest" >&2
-            exit 1
-          fi
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION"
 
-      - name: Check if tag exists
-        id: check
+      - name: Check if release exists
+        id: check_release
         run: |
-          git fetch --tags
-          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+          if gh release view "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Create and push tag
-        if: steps.check.outputs.exists == 'false'
-        run: |
-          git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
