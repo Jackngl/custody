@@ -50,20 +50,4 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
-          ignore: |
-            **/__pycache__/**
-            **/*.pyc
-            **/.git/**
-            **/.github/**
-            **/scripts/**
-            **/tests/**
-            **/*.md
-            CHANGELOG.*
-            VERSIONING.md
-            CONTRIBUTING.md
-            LICENSE
-            PUBLISH.md
-            GET_TOKEN.md
-            info.md
-            create_repo*
-            pyproject.toml
+          ignore: brands

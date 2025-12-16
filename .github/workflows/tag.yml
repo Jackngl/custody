@@ -1,4 +1,4 @@
-name: Tag on main
+name: Auto Tag
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  tag:
+  create-tag:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -48,18 +48,3 @@ PY
         run: |
           git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
           git push origin "v${{ steps.version.outputs.version }}"
-
-      - name: Create GitHub Release
-        if: steps.check.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
-          body: |
-            ## Version ${{ steps.version.outputs.version }}
-            
-            Voir le [changelog](https://github.com/${{ github.repository }}/blob/main/README.md) pour plus de détails.
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
