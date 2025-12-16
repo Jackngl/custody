@@ -44,17 +44,17 @@ class SensorDefinition:
 
 
 SENSORS: tuple[SensorDefinition, ...] = (
-    SensorDefinition("next_arrival", "Next arrival", "mdi:calendar-clock"),
-    SensorDefinition("next_departure", "Next departure", "mdi:calendar-arrow-right"),
+    SensorDefinition("next_arrival", "Prochaine arrivée", "mdi:calendar-clock"),
+    SensorDefinition("next_departure", "Prochain départ", "mdi:calendar-arrow-right"),
     SensorDefinition(
         "days_remaining",
-        "Days remaining",
+        "Jours restants",
         "mdi:clock-end",
         SensorDeviceClass.DURATION,
         SensorStateClass.MEASUREMENT,
         UnitOfTime.DAYS,
     ),
-    SensorDefinition("current_period", "Current period", "mdi:school"),
+    SensorDefinition("current_period", "Période actuelle", "mdi:school"),
 )
 
 
@@ -88,7 +88,7 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         self._definition = definition
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{definition.key}"
-        self._attr_name = f"{child_name} {definition.name}"
+        self._attr_name = definition.name
         self._attr_icon = definition.icon
         self._attr_device_class = definition.device_class
         self._attr_state_class = definition.state_class
