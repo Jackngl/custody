@@ -97,27 +97,66 @@ class SchoolHolidayClient:
                 all_holidays.extend(self._cache[cache_key])
                 continue
 
-            url = self._api_url.format(zone=normalized_zone, year=school_year)
             try:
-                LOGGER.info("Fetching school holidays from API: %s", url)
-                async with self._session.get(url, timeout=aiohttp.ClientTimeout(total=20)) as resp:
-                    resp.raise_for_status()
-                    payload: dict[str, Any] = await resp.json()
-            except aiohttp.ClientError as err:
-                LOGGER.warning(
-                    "Failed to fetch school holidays for zone %s, year %s: %s",
-                    normalized_zone,
-                    school_year,
+                url = self._api_url.format(zone=normalized_zone, year=school_year)
+            except KeyError as err:
+                LOGGER.error(
+                    "Invalid API URL format: missing placeholder %s. URL: %s",
                     err,
+                    self._api_url,
                 )
                 self._cache[cache_key] = []
                 continue
             except Exception as err:
                 LOGGER.error(
-                    "Unexpected error fetching school holidays for zone %s, year %s: %s",
+                    "Error formatting API URL for zone %s, year %s: %s. URL template: %s",
                     normalized_zone,
                     school_year,
                     err,
+                    self._api_url,
+                )
+                self._cache[cache_key] = []
+                continue
+
+            try:
+                LOGGER.info("Fetching school holidays from API: %s", url)
+                async with self._session.get(url, timeout=aiohttp.ClientTimeout(total=20)) as resp:
+                    status = resp.status
+                    resp.raise_for_status()
+                    try:
+                        payload: dict[str, Any] = await resp.json()
+                    except Exception as json_err:
+                        text = await resp.text()
+                        LOGGER.error(
+                            "Failed to parse JSON response for zone %s, year %s. Status: %s, Response: %s. Error: %s",
+                            normalized_zone,
+                            school_year,
+                            status,
+                            text[:500],  # Limit response text to 500 chars
+                            json_err,
+                        )
+                        self._cache[cache_key] = []
+                        continue
+            except aiohttp.ClientError as err:
+                LOGGER.warning(
+                    "Failed to fetch school holidays for zone %s, year %s: %s (URL: %s)",
+                    normalized_zone,
+                    school_year,
+                    err,
+                    url,
+                )
+                self._cache[cache_key] = []
+                continue
+            except Exception as err:
+                import traceback
+                LOGGER.error(
+                    "Unexpected error fetching school holidays for zone %s, year %s: %s (type: %s). URL: %s. Traceback: %s",
+                    normalized_zone,
+                    school_year,
+                    err,
+                    type(err).__name__,
+                    url,
+                    traceback.format_exc(),
                 )
                 self._cache[cache_key] = []
                 continue
@@ -183,25 +222,48 @@ class SchoolHolidayClient:
             year = self._get_school_year(now)
         
         normalized_zone = self._normalize_zone(zone)
-        url = self._api_url.format(zone=normalized_zone, year=year)
         
         result = {
-            "url": url,
+            "url": None,
             "zone": zone,
             "normalized_zone": normalized_zone,
             "school_year": year,
             "success": False,
             "error": None,
+            "error_type": None,
+            "status_code": None,
             "records_count": 0,
             "holidays_count": 0,
         }
+        
+        try:
+            url = self._api_url.format(zone=normalized_zone, year=year)
+            result["url"] = url
+        except KeyError as err:
+            result["error"] = f"Invalid API URL format: missing placeholder {err}"
+            result["error_type"] = "KeyError"
+            LOGGER.error("API test failed: %s. URL template: %s", result["error"], self._api_url)
+            return result
+        except Exception as err:
+            result["error"] = f"Error formatting URL: {err}"
+            result["error_type"] = type(err).__name__
+            LOGGER.error("API test failed: %s", result["error"])
+            return result
         
         try:
             LOGGER.info("Testing API connection: %s", url)
             async with self._session.get(url, timeout=aiohttp.ClientTimeout(total=20)) as resp:
                 result["status_code"] = resp.status
                 resp.raise_for_status()
-                payload: dict[str, Any] = await resp.json()
+                try:
+                    payload: dict[str, Any] = await resp.json()
+                except Exception as json_err:
+                    text = await resp.text()
+                    result["error"] = f"Failed to parse JSON: {json_err}. Response: {text[:200]}"
+                    result["error_type"] = type(json_err).__name__
+                    LOGGER.error("API test failed to parse JSON: %s", result["error"])
+                    return result
+                
                 records = payload.get("records", [])
                 result["records_count"] = len(records)
                 
@@ -225,10 +287,13 @@ class SchoolHolidayClient:
                 
         except aiohttp.ClientError as err:
             result["error"] = str(err)
-            LOGGER.error("API test failed: %s", err)
+            result["error_type"] = type(err).__name__
+            LOGGER.error("API test failed (ClientError): %s", err)
         except Exception as err:
+            import traceback
             result["error"] = str(err)
-            LOGGER.error("API test unexpected error: %s", err)
+            result["error_type"] = type(err).__name__
+            LOGGER.error("API test unexpected error: %s (type: %s). Traceback: %s", err, type(err).__name__, traceback.format_exc())
         
         return result
 
