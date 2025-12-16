@@ -50,8 +50,8 @@ class CustodyPresenceBinarySensor(CoordinatorEntity[CustodyComputation], BinaryS
         self._attr_unique_id = f"{entry.entry_id}_presence"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name=f"{child_name} Custody schedule",
-            manufacturer="Custody Schedule",
+            name=f"{child_name} Planning de garde",
+            manufacturer="Planning de garde",
         )
         photo = entry.data.get(CONF_PHOTO)
         if photo:

@@ -95,8 +95,8 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         self._attr_native_unit_of_measurement = definition.unit
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name=f"{child_name} Custody schedule",
-            manufacturer="Custody Schedule",
+            name=f"{child_name} Planning de garde",
+            manufacturer="Planning de garde",
             configuration_url="https://www.home-assistant.io/",
         )
         photo = entry.data.get(CONF_PHOTO)
