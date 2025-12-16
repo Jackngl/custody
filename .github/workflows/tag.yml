@@ -67,9 +67,11 @@ PY
         run: |
           echo "::group::Fetching tags"
           echo "Fetching all tags from remote..."
-          git fetch --tags --force
+          git fetch --tags --force || echo "WARNING: git fetch --tags failed"
           echo "Local tags:"
           git tag -l | tail -10 || echo "No tags found"
+          echo "Remote tags:"
+          git ls-remote --tags origin | tail -10 || echo "No remote tags found"
           echo "::endgroup::"
 
       - name: Check if tag exists
@@ -78,13 +80,21 @@ PY
           echo "::group::Checking if tag exists"
           TAG_NAME="v${{ steps.version.outputs.version }}"
           echo "Checking for tag: $TAG_NAME"
+          # Check locally
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
             echo "Tag $TAG_NAME already exists locally"
             git show "$TAG_NAME" --no-patch --format="%H %s" || true
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Tag $TAG_NAME does not exist locally, will create it"
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG_NAME does not exist locally"
+            # Check on remote
+            if git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
+              echo "Tag $TAG_NAME exists on remote"
+              echo "exists=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "Tag $TAG_NAME does not exist, will create it"
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
           echo "Tag exists: ${{ steps.check_tag.outputs.exists }}"
           echo "::endgroup::"
@@ -95,16 +105,32 @@ PY
           echo "::group::Creating and pushing tag"
           TAG_NAME="v${{ steps.version.outputs.version }}"
           echo "Creating tag: $TAG_NAME"
-          git tag -a "$TAG_NAME" -m "Release v${{ steps.version.outputs.version }}"
+          set -e
+          git tag -a "$TAG_NAME" -m "Release v${{ steps.version.outputs.version }}" || {
+            echo "ERROR: Failed to create tag locally"
+            exit 1
+          }
           echo "Tag created locally"
           git show "$TAG_NAME" --no-patch --format="%H %s" || true
           echo "Pushing tag to remote..."
           git push origin "$TAG_NAME" || {
             echo "ERROR: Failed to push tag"
+            echo "Remote info:"
             git remote -v
+            echo "Current branch:"
+            git branch -a
+            echo "Git status:"
+            git status
             exit 1
           }
-          echo "Tag $TAG_NAME created and pushed successfully"
+          echo "✓ Tag $TAG_NAME created and pushed successfully"
+          echo "Verifying tag on remote..."
+          sleep 1
+          if git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
+            echo "✓ Tag confirmed on remote"
+          else
+            echo "⚠ WARNING: Tag not found on remote after push"
+          fi
           echo "::endgroup::"
 
       - name: Check if release exists
@@ -126,14 +152,14 @@ PY
           
           echo "HTTP Response Code: $HTTP_CODE"
           if [ "$HTTP_CODE" = "200" ]; then
-            echo "Release $TAG_NAME already exists"
+            echo "✓ Release $TAG_NAME already exists"
             echo "$BODY" | jq -r '.name, .tag_name, .published_at' 2>/dev/null || echo "Response: $BODY"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           elif [ "$HTTP_CODE" = "404" ]; then
             echo "Release $TAG_NAME does not exist (404), will create it"
             echo "exists=false" >> "$GITHUB_OUTPUT"
           else
-            echo "WARNING: Unexpected response code $HTTP_CODE"
+            echo "⚠ WARNING: Unexpected response code $HTTP_CODE"
             echo "Response body: $BODY"
             echo "Will attempt to create release anyway"
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -148,9 +174,11 @@ PY
           TAG_NAME="v${{ steps.version.outputs.version }}"
           echo "Creating release for tag: $TAG_NAME"
           echo "Repository: ${{ github.repository }}"
+          echo "GITHUB_TOKEN available: $([ -n "${{ secrets.GITHUB_TOKEN }}" ] && echo "yes" || echo "no")"
           echo "::endgroup::"
 
       - name: Create GitHub Release
+        id: create_release
         if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
@@ -167,23 +195,68 @@ PY
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
+      - name: Check release creation result
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          echo "::group::Release Creation Result"
+          if [ "${{ steps.create_release.outcome }}" = "success" ]; then
+            echo "✓ Release creation step completed successfully"
+          elif [ "${{ steps.create_release.outcome }}" = "failure" ]; then
+            echo "✗ Release creation step failed"
+            echo "Exit code: ${{ steps.create_release.conclusion }}"
+          else
+            echo "⚠ Release creation step outcome: ${{ steps.create_release.outcome }}"
+          fi
+          echo "::endgroup::"
+
       - name: Verify release creation
         if: steps.check_release.outputs.exists == 'false'
         run: |
           echo "::group::Verifying release creation"
           TAG_NAME="v${{ steps.version.outputs.version }}"
-          sleep 2
+          echo "Waiting 3 seconds for release to be created..."
+          sleep 3
+          API_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME"
+          echo "Checking: $API_URL"
           RESPONSE=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME")
+            "$API_URL" 2>&1)
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+          
+          echo "HTTP Response Code: $HTTP_CODE"
           if [ "$HTTP_CODE" = "200" ]; then
             echo "✓ Release $TAG_NAME created successfully"
-            echo "$RESPONSE" | head -n-1 | jq -r '.html_url' 2>/dev/null || echo "Release URL available"
+            RELEASE_URL=$(echo "$BODY" | jq -r '.html_url' 2>/dev/null || echo "")
+            if [ -n "$RELEASE_URL" ]; then
+              echo "Release URL: $RELEASE_URL"
+            fi
+            echo "$BODY" | jq -r '.name, .tag_name, .published_at' 2>/dev/null || echo "Response: $BODY"
           else
             echo "✗ Release creation may have failed (HTTP $HTTP_CODE)"
-            echo "Response: $RESPONSE"
+            echo "Response: $BODY"
+            echo "This might be normal if the release was just created and GitHub hasn't indexed it yet"
             exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: Final status
+        if: always()
+        run: |
+          echo "::group::Final Status"
+          echo "Job status: ${{ job.status }}"
+          echo "Tag exists: ${{ steps.check_tag.outputs.exists }}"
+          echo "Release exists: ${{ steps.check_release.outputs.exists }}"
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✓ Workflow completed successfully"
+          else
+            echo "✗ Workflow failed"
+            echo "Failed steps:"
+            echo "- Check tag: ${{ steps.check_tag.outcome }}"
+            echo "- Create tag: ${{ steps.create_and_push_tag.outcome || 'N/A' }}"
+            echo "- Check release: ${{ steps.check_release.outcome }}"
+            echo "- Create release: ${{ steps.create_release.outcome }}"
+            echo "- Verify release: ${{ steps.verify_release.outcome || 'N/A' }}"
           fi
           echo "::endgroup::"
