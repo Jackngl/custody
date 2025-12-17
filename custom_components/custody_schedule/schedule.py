@@ -124,7 +124,8 @@ class CustodyScheduleManager:
 
     async def async_calculate(self, now: datetime) -> CustodyComputation:
         """Build the schedule state used by entities."""
-        now_local = dt_util.as_local(now)
+        # now is already in local time (from dt_util.now()), no need to convert
+        now_local = now if now.tzinfo else dt_util.as_local(now)
         windows = await self._build_windows(now_local)
         windows.extend(self._manual_windows)
         windows.sort(key=lambda window: window.start)
@@ -354,12 +355,14 @@ class CustodyScheduleManager:
                 window_start = self._apply_time(window_start, self._arrival_time)
                 window_end = self._apply_time(end, self._departure_time)
             elif rule == "even_weeks":
+                window_start = start
                 if int(start.strftime("%U")) % 2 != 0:
                     window_start = start + timedelta(days=7)
                 window_start = self._apply_time(window_start, self._arrival_time)
                 window_end = min(end, window_start + timedelta(days=7))
                 window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "odd_weeks":
+                window_start = start
                 if int(start.strftime("%U")) % 2 == 0:
                     window_start = start + timedelta(days=7)
                 window_start = self._apply_time(window_start, self._arrival_time)
