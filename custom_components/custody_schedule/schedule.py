@@ -856,10 +856,12 @@ class CustodyScheduleManager:
                 return holiday_end
             
             # Apply departure time to holiday_end for accurate midpoint calculation
-            # If holiday_end is at midnight on a Sunday, it's the end of the previous Sunday
-            # Use the previous Sunday with departure time
-            if holiday_end.weekday() == 6 and holiday_end.hour == 0 and holiday_end.minute == 0:
-                # It's Sunday midnight, use the previous Sunday (yesterday) with departure time
+            # If holiday_end is at midnight, it's likely the day after the actual end
+            # For vacations, the end is typically a Sunday at departure time
+            # If holiday_end is Monday 00:00, it means the vacation ended on Sunday
+            if holiday_end.hour == 0 and holiday_end.minute == 0:
+                # It's at midnight, likely the day after the actual end
+                # Use the previous day (Sunday) with departure time
                 holiday_end_date = holiday_end.date() - timedelta(days=1)
                 holiday_end_with_time = datetime.combine(holiday_end_date, self._departure_time, holiday_end.tzinfo)
             else:
