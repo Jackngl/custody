@@ -18,14 +18,17 @@ Ce guide explique comment configurer la **garde normale** (weekends et semaines 
 
 ## 🎯 Types de garde disponibles
 
-L'application supporte plusieurs types de garde pour les weekends et semaines :
+L'application supporte **7 types de garde** pour les weekends et semaines :
 
-| Type | Description | Utilisation |
-|------|-------------|-------------|
-| **Week-ends semaines paires** | Garde tous les weekends des semaines ISO paires | Garde régulière basée sur la parité des semaines |
-| **Week-ends semaines impaires** | Garde tous les weekends des semaines ISO impaires | Alternative aux weekends pairs |
-| **Week-ends alternés** | Garde un weekend sur deux (cycle de 14 jours) | Garde alternée classique |
-| **Semaines alternées** | Garde une semaine sur deux (cycle de 14 jours) | Garde hebdomadaire alternée |
+| Type | Code | Description | Cycle | Utilisation |
+|------|------|-------------|-------|-------------|
+| **Semaines alternées (1/1)** | `alternate_week` | Garde une semaine complète sur deux | 14 jours | Garde hebdomadaire alternée classique |
+| **Week-end sur 2** | `alternate_weekend` | Garde un weekend sur deux | 14 jours | Garde alternée weekends uniquement |
+| **Week-ends semaines paires** | `even_weekends` | Garde tous les weekends des semaines ISO paires | 7 jours | Basé sur la parité ISO des semaines |
+| **Week-ends semaines impaires** | `odd_weekends` | Garde tous les weekends des semaines ISO impaires | 7 jours | Complémentaire des weekends pairs |
+| **2-2-3** | `two_two_three` | Garde 2 jours, pause 2 jours, garde 3 jours | 7 jours | Rythme hebdomadaire régulier |
+| **2-2-5-5** | `two_two_five_five` | Garde 2 jours, pause 2 jours, garde 5 jours, pause 5 jours | 14 jours | Rythme bi-hebdomadaire |
+| **Personnalisé** | `custom` | Règles personnalisées définies manuellement | Variable | Cas spécifiques |
 
 ---
 
@@ -174,6 +177,110 @@ arrival_time: "08:00"
 departure_time: "19:00"
 ```
 
+**Exemple de cycle** :
+- Semaine 1 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
+- Semaine 2 : ❌ Pas de garde
+- Semaine 3 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
+
+---
+
+### 5. Rythme 2-2-3 (`two_two_three`)
+
+**Fonctionnement** :
+- Garde **2 jours**, pause **2 jours**, garde **3 jours** (cycle de 7 jours)
+- Pattern répété chaque semaine
+- Utilise le champ `start_day` pour déterminer le jour de départ du cycle
+
+**Configuration** :
+```yaml
+custody_type: "two_two_three"
+reference_year: "even"
+start_day: "monday"  # Jour de départ du cycle
+arrival_time: "08:00"
+departure_time: "19:00"
+```
+
+**Exemple de cycle (7 jours)** :
+- Jours 1-2 : ✅ Garde (ex: Lun-Mar)
+- Jours 3-4 : ❌ Pas de garde (ex: Mer-Jeu)
+- Jours 5-7 : ✅ Garde (ex: Ven-Dim)
+- Puis le cycle recommence
+
+**Calendrier type** :
+```
+Semaine 1 :
+  ✅ Lun 08:00 → Mar 19:00 (2 jours)
+  ❌ Mer-Jeu (pas de garde)
+  ✅ Ven 08:00 → Dim 19:00 (3 jours)
+
+Semaine 2 :
+  ✅ Lun 08:00 → Mar 19:00 (2 jours)
+  ❌ Mer-Jeu (pas de garde)
+  ✅ Ven 08:00 → Dim 19:00 (3 jours)
+```
+
+---
+
+### 6. Rythme 2-2-5-5 (`two_two_five_five`)
+
+**Fonctionnement** :
+- Garde **2 jours**, pause **2 jours**, garde **5 jours**, pause **5 jours** (cycle de 14 jours)
+- Pattern répété toutes les 2 semaines
+- Utilise le champ `start_day` pour déterminer le jour de départ du cycle
+
+**Configuration** :
+```yaml
+custody_type: "two_two_five_five"
+reference_year: "even"
+start_day: "monday"  # Jour de départ du cycle
+arrival_time: "08:00"
+departure_time: "19:00"
+```
+
+**Exemple de cycle (14 jours)** :
+- Jours 1-2 : ✅ Garde (ex: Lun-Mar)
+- Jours 3-4 : ❌ Pas de garde (ex: Mer-Jeu)
+- Jours 5-9 : ✅ Garde (ex: Ven-Mar suivant)
+- Jours 10-14 : ❌ Pas de garde
+- Puis le cycle recommence
+
+**Calendrier type** :
+```
+Semaine 1 :
+  ✅ Lun 08:00 → Mar 19:00 (2 jours)
+  ❌ Mer-Jeu (pas de garde)
+  ✅ Ven 08:00 → Mar suivant 19:00 (5 jours)
+
+Semaine 2 :
+  ❌ Mer-Dim (pas de garde, 5 jours)
+
+Semaine 3 :
+  ✅ Lun 08:00 → Mar 19:00 (2 jours)
+  ❌ Mer-Jeu (pas de garde)
+  ✅ Ven 08:00 → Mar suivant 19:00 (5 jours)
+  ...
+```
+
+---
+
+### 7. Personnalisé (`custom`)
+
+**Fonctionnement** :
+- Règles de garde définies manuellement via les exceptions ou règles personnalisées
+- Permet de créer des patterns spécifiques non couverts par les types standards
+- Nécessite une configuration manuelle des périodes
+
+**Configuration** :
+```yaml
+custody_type: "custom"
+# Les périodes sont définies via les règles personnalisées dans les options
+```
+
+**Utilisation** :
+- Accédez aux options de l'intégration
+- Utilisez les règles personnalisées pour définir vos périodes
+- Ou utilisez le service `set_manual_dates` pour définir des périodes spécifiques
+
 ---
 
 ## 🎉 Gestion des jours fériés
@@ -234,6 +341,22 @@ Les événements de garde affichent automatiquement les extensions :
 - `Garde - Week-ends semaines paires + Lundi férié`
 - `Garde - Week-ends semaines paires + Vendredi férié`
 - `Garde - Week-ends semaines paires + Pont`
+
+---
+
+## 📊 Tableau récapitulatif des types de garde
+
+| Type | Cycle | Utilise start_day | Utilise reference_year | Jours fériés |
+|------|-------|-------------------|------------------------|--------------|
+| `alternate_week` | 14 jours | ✅ Oui | ✅ Oui | ❌ Non |
+| `alternate_weekend` | 14 jours | ✅ Oui | ✅ Oui | ✅ Oui |
+| `even_weekends` | 7 jours | ❌ Non | ✅ Oui | ✅ Oui |
+| `odd_weekends` | 7 jours | ❌ Non | ✅ Oui | ✅ Oui |
+| `two_two_three` | 7 jours | ✅ Oui | ✅ Oui | ❌ Non |
+| `two_two_five_five` | 14 jours | ✅ Oui | ✅ Oui | ❌ Non |
+| `custom` | Variable | ✅ Oui | ✅ Oui | ❌ Non |
+
+**Note** : Seuls les types de garde basés sur les weekends (`alternate_weekend`, `even_weekends`, `odd_weekends`) bénéficient de l'extension automatique avec les jours fériés.
 
 ---
 
@@ -299,6 +422,50 @@ school_level: "primary"
 # Semaine 3 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
 ```
 
+### Exemple 4 : Rythme 2-2-3
+
+**Situation** : Garde 2 jours, pause 2 jours, garde 3 jours, cycle hebdomadaire.
+
+```yaml
+# Configuration
+custody_type: "two_two_three"
+reference_year: "even"
+start_day: "monday"
+arrival_time: "08:00"
+departure_time: "19:00"
+school_level: "primary"
+
+# Résultat (cycle de 7 jours, répété chaque semaine)
+# Semaine 1 :
+#   ✅ Lun 08:00 → Mar 19:00 (2 jours)
+#   ❌ Mer-Jeu (pas de garde)
+#   ✅ Ven 08:00 → Dim 19:00 (3 jours)
+# Semaine 2 : Même pattern
+```
+
+### Exemple 5 : Rythme 2-2-5-5
+
+**Situation** : Garde 2 jours, pause 2 jours, garde 5 jours, pause 5 jours, cycle bi-hebdomadaire.
+
+```yaml
+# Configuration
+custody_type: "two_two_five_five"
+reference_year: "even"
+start_day: "monday"
+arrival_time: "08:00"
+departure_time: "19:00"
+school_level: "primary"
+
+# Résultat (cycle de 14 jours)
+# Semaine 1 :
+#   ✅ Lun 08:00 → Mar 19:00 (2 jours)
+#   ❌ Mer-Jeu (pas de garde)
+#   ✅ Ven 08:00 → Mar suivant 19:00 (5 jours)
+# Semaine 2 :
+#   ❌ Mer-Dim (pas de garde, 5 jours)
+# Puis le cycle recommence
+```
+
 ---
 
 ## ⚠️ Notes importantes
@@ -320,7 +487,12 @@ school_level: "primary"
 
 ### Champ "Jour de départ du cycle"
 
-- ✅ **Utilisé pour** : `alternate_weekend`, `alternate_week`
+- ✅ **Utilisé pour** : 
+  - `alternate_weekend` (weekends alternés)
+  - `alternate_week` (semaines alternées)
+  - `two_two_three` (rythme 2-2-3)
+  - `two_two_five_five` (rythme 2-2-5-5)
+  - `custom` (personnalisé)
 - ❌ **Non utilisé pour** : `even_weekends`, `odd_weekends`
   - Ces types utilisent la parité ISO des semaines
   - Le champ est masqué dans l'interface pour ces types
