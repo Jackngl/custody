@@ -45,7 +45,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Custody Schedule from a config entry."""
     hass.data.setdefault(DOMAIN, {})
-    
+
     config = {**entry.data, **(entry.options or {})}
     api_url = config.get(CONF_HOLIDAY_API_URL) or HOLIDAY_API
     

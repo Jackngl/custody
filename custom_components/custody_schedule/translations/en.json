@@ -95,10 +95,10 @@
       "custom": "Custom"
     },
     "vacation_rule": {
-      "first_week": "First week",
-      "second_week": "Second week",
-      "first_half": "First half",
-      "second_half": "Second half",
+      "first_week": "First week (odd years only)",
+      "second_week": "Second week (even years only)",
+      "first_half": "First half (odd years only)",
+      "second_half": "Second half (even years only)",
       "even_weeks": "Even weeks",
       "odd_weeks": "Odd weeks",
       "even_weekends": "Even week weekends",
@@ -108,6 +108,7 @@
       "custom": "Custom"
     },
     "summer_rule": {
+      "summer_parity_auto": "Automatic by year (even=August, odd=July)",
       "july_first_half": "July - first half (1-15 July)",
       "july_second_half": "July - second half (16-31 July)",
       "august_first_half": "August - first half (1-15 August)",

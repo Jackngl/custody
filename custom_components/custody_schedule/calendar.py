@@ -83,7 +83,7 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
         elif window.source == "pattern":
             description = f"Garde normale • {window.label}"
         else:
-            description = f"{window.label} • Source: {window.source}"
+        description = f"{window.label} • Source: {window.source}"
         
         location = self.coordinator.data.attributes.get(CONF_LOCATION) if self.coordinator.data else None
         return CalendarEvent(

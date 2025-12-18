@@ -110,20 +110,22 @@ Certaines dates peuvent être corrigées manuellement dans le code si l'API est 
 - **Valeurs** : `"A"`, `"B"`, `"C"`, `"Corse"`, `"DOM-TOM"`
 - **Exemple** : `"C"` pour la zone C (Paris, Créteil, etc.)
 
-#### 2. **Règle de vacances** (`vacation_rule`)
-- **Description** : Règle de partage pendant les vacances scolaires
-- **Valeurs** : Voir [Règles de vacances disponibles](#règles-de-vacances-disponibles)
-- **Exemple** : `"first_half"` pour la première moitié, `"july"` pour juillet complet
-
-#### 2bis. **Année de référence** (`reference_year`)
+#### 2. **Année de référence** (`reference_year`)
 - **Description** : Détermine la parité (paire/impaire) pour les règles `july` et `august`
 - **Valeurs** : `"even"` (paire), `"odd"` (impaire)
+- **Configuration** : Dans le masque de saisie "Vacances scolaires"
 - **Utilisation** :
   - `reference_year: "even"` + `july` → Juillet complet en **années paires** (2024, 2026, ...)
   - `reference_year: "odd"` + `july` → Juillet complet en **années impaires** (2025, 2027, ...)
   - Même logique pour `august`
+- **Note** : Ce champ n'est **pas utilisé** avec la règle `summer_parity_auto` (la parité est calculée automatiquement depuis l'année des vacances)
 
-#### 3. **Niveau scolaire** (`school_level`)
+#### 3. **Règle de vacances** (`vacation_rule`)
+- **Description** : Règle de partage pendant les vacances scolaires
+- **Valeurs** : `"july"`, `"august"`, `"custom"`
+- **Exemple** : `"july"` pour juillet complet (selon `reference_year`)
+
+#### 4. **Niveau scolaire** (`school_level`)
 - **Description** : Niveau scolaire de l'enfant (affecte les horaires de sortie)
 - **Valeurs** : `"primary"` (primaire), `"middle"` (collège), `"high"` (lycée)
 - **Impact** :
@@ -132,7 +134,7 @@ Certaines dates peuvent être corrigées manuellement dans le code si l'API est 
 
 ### Champs optionnels
 
-#### 4. **Règle d'été** (`summer_rule`)
+#### 5. **Règle d'été** (`summer_rule`)
 - **Description** : Règle spéciale pour les vacances d'été (juillet-août)
 - **Valeurs** : Voir [Règles spéciales pour l'été](#règles-spéciales-pour-lété)
 - **Exemple** : `"summer_half_parity"` pour partage par moitié selon parité d'année
@@ -145,10 +147,10 @@ Certaines dates peuvent être corrigées manuellement dans le code si l'API est 
 
 | Règle | Code | Description | Utilisation |
 |-------|------|-------------|-------------|
-| **1ère semaine** | `first_week` | Garde la première semaine complète | Vacances courtes |
-| **2ème semaine** | `second_week` | Garde la deuxième semaine complète | Vacances courtes |
-| **1ère moitié** | `first_half` | Garde la première moitié (milieu calculé) | Partage équitable |
-| **2ème moitié** | `second_half` | Garde la deuxième moitié (milieu calculé) | Partage équitable |
+| **1ère semaine** | `first_week` | Garde la première semaine complète<br>**Uniquement en années impaires** | Vacances courtes |
+| **2ème semaine** | `second_week` | Garde la deuxième semaine complète<br>**Uniquement en années paires** | Vacances courtes |
+| **1ère moitié** | `first_half` | Garde la première moitié (milieu calculé)<br>**Uniquement en années impaires** | Partage équitable |
+| **2ème moitié** | `second_half` | Garde la deuxième moitié (milieu calculé)<br>**Uniquement en années paires** | Partage équitable |
 | **Semaines paires** | `even_weeks` | Garde les semaines ISO paires | Partage alterné |
 | **Semaines impaires** | `odd_weeks` | Garde les semaines ISO impaires | Partage alterné |
 | **Weekends semaines paires** | `even_weekends` | Garde les weekends des semaines paires | Weekends uniquement |
@@ -157,7 +159,13 @@ Certaines dates peuvent être corrigées manuellement dans le code si l'API est 
 | **Août complet** | `august` | Garde tout le mois d'août (selon `reference_year`) | Été |
 | **Personnalisé** | `custom` | Règles personnalisées définies manuellement | Cas spécifiques |
 
-> **Note** : Les règles `july` et `august` utilisent le champ `reference_year` pour déterminer la parité :
+> **Règle de parité automatique** : Pour `first_week`, `second_week`, `first_half`, `second_half` :
+> - **Année impaire** (2025, 2027, ...) → 1ère partie (1ère semaine, 1ère moitié, Juillet)
+> - **Année paire** (2024, 2026, ...) → 2ème partie (2ème semaine, 2ème moitié, Août)
+> 
+> Si vous configurez `first_week` ou `first_half`, vous aurez la garde uniquement en années impaires. Si vous configurez `second_week` ou `second_half`, vous aurez la garde uniquement en années paires.
+
+> **Note** : Les règles `july` et `august` utilisent le champ `reference_year` (configuré dans le masque de saisie "Vacances scolaires") pour déterminer la parité :
 > - `reference_year: "even"` → Juillet/Août en **années paires** (2024, 2026, ...)
 > - `reference_year: "odd"` → Juillet/Août en **années impaires** (2025, 2027, ...)
 
@@ -165,6 +173,7 @@ Certaines dates peuvent être corrigées manuellement dans le code si l'API est 
 
 | Règle | Code | Description |
 |-------|------|-------------|
+| **Automatique selon année** | `summer_parity_auto` | Année paire = Août complet<br>Année impaire = Juillet complet<br>S'applique aussi aux découpages (paire=seconde partie, impaire=première partie) |
 | **Juillet - 1ère moitié** | `july_first_half` | 1er au 15 juillet |
 | **Juillet - 2ème moitié** | `july_second_half` | 16 au 31 juillet |
 | **Août - 1ère moitié** | `august_first_half` | 1er au 15 août |
@@ -180,6 +189,8 @@ Certaines dates peuvent être corrigées manuellement dans le code si l'API est 
 
 **Fonctionnement** :
 - Garde la **première semaine complète** des vacances
+- **Uniquement en années impaires** (2025, 2027, ...)
+- Années paires : pas de garde (car c'est la 2ème partie)
 - Début : Vendredi 16:15 (sortie d'école) ou samedi selon niveau
 - Fin : Dimanche 19:00 de la première semaine
 
@@ -189,10 +200,9 @@ vacation_rule: "first_week"
 school_level: "primary"
 ```
 
-**Exemple** (Vacances de Noël 2025, Zone C) :
-- Début officiel : 20/12/2025 (samedi)
-- Début effectif : 19/12/2025 16:15 (vendredi sortie école)
-- Fin : 28/12/2025 19:00 (dimanche fin 1ère semaine)
+**Exemple** :
+- 2025 (impaire) : ✅ 1ère semaine (19/12/2025 16:15 → 28/12/2025 19:00)
+- 2026 (paire) : ❌ Pas de garde (car c'est la 2ème partie)
 
 ---
 
@@ -200,6 +210,8 @@ school_level: "primary"
 
 **Fonctionnement** :
 - Garde la **deuxième semaine complète** des vacances
+- **Uniquement en années paires** (2024, 2026, ...)
+- Années impaires : pas de garde (car c'est la 1ère partie)
 - Début : Lundi de la 2ème semaine à l'heure d'arrivée
 - Fin : Dimanche 19:00 de la deuxième semaine
 
@@ -209,12 +221,18 @@ vacation_rule: "second_week"
 school_level: "primary"
 ```
 
+**Exemple** :
+- 2024 (paire) : ✅ 2ème semaine
+- 2025 (impaire) : ❌ Pas de garde (car c'est la 1ère partie)
+
 ---
 
 ### 3. Première moitié (`first_half`)
 
 **Fonctionnement** :
 - Garde la **première moitié** des vacances
+- **Uniquement en années impaires** (2025, 2027, ...)
+- Années paires : pas de garde (car c'est la 2ème partie)
 - **Milieu calculé automatiquement** : Date/heure exacte au milieu de la période effective
 - Début : Vendredi 16:15 (sortie d'école)
 - Fin : Milieu exact calculé (ex: 27/12/2025 17:37:30)
@@ -229,11 +247,9 @@ vacation_rule: "first_half"
 school_level: "primary"
 ```
 
-**Exemple** (Vacances de Noël 2025, Zone C) :
-- Début : 19/12/2025 16:15
-- Fin officielle : 05/01/2026 00:00 → ajustée à 04/01/2026 19:00
-- Milieu calculé : 27/12/2025 17:37:30
-- **Fin de garde** : 27/12/2025 17:37:30
+**Exemple** :
+- 2025 (impaire) : ✅ 1ère moitié (19/12/2025 16:15 → 27/12/2025 17:37:30)
+- 2026 (paire) : ❌ Pas de garde (car c'est la 2ème partie)
 
 ---
 
@@ -241,6 +257,8 @@ school_level: "primary"
 
 **Fonctionnement** :
 - Garde la **deuxième moitié** des vacances
+- **Uniquement en années paires** (2024, 2026, ...)
+- Années impaires : pas de garde (car c'est la 1ère partie)
 - **Milieu calculé automatiquement** : Date/heure exacte au milieu de la période effective
 - Début : Milieu exact calculé (ex: 27/12/2025 17:37:30)
 - Fin : Dimanche 19:00 (fin officielle)
@@ -250,6 +268,10 @@ school_level: "primary"
 vacation_rule: "second_half"
 school_level: "primary"
 ```
+
+**Exemple** :
+- 2024 (paire) : ✅ 2ème moitié
+- 2025 (impaire) : ❌ Pas de garde (car c'est la 1ère partie)
 
 ---
 
@@ -273,6 +295,8 @@ school_level: "primary"
 - 2026 (paire) : ❌ Pas de garde en juillet
 - 2027 (impaire) : ✅ Juillet 2027 complet
 
+> ⚠️ **Important** : Avec cette configuration (`july` + `reference_year`), vous configurez **uniquement juillet**. "Pas de garde en juillet" ne signifie **pas automatiquement** "garde en août". Pour avoir les deux mois selon la parité, utilisez `summer_rule: "summer_parity_auto"`.
+
 ---
 
 ### 6. Août complet (`august`)
@@ -294,6 +318,8 @@ school_level: "primary"
 - 2024 (paire) : ✅ Août 2024 complet
 - 2025 (impaire) : ❌ Pas de garde en août
 - 2026 (paire) : ✅ Août 2026 complet
+
+> ⚠️ **Important** : Avec cette configuration (`august` + `reference_year`), vous configurez **uniquement août**. "Pas de garde en août" ne signifie **pas automatiquement** "garde en juillet". Pour avoir les deux mois selon la parité, utilisez `summer_rule: "summer_parity_auto"`.
 
 ---
 
@@ -370,21 +396,9 @@ L'application ajuste automatiquement les dates de l'API pour correspondre aux ho
 #### Fin effective
 - **Toujours** : Dimanche 19:00 (même si l'API indique "reprise lundi")
 
-### Calcul du milieu exact
+### Calcul des dates
 
-Pour les règles `first_half`, `second_half`, `first_week_*_year`, `second_week_*_year` :
-
-1. **Période effective** : Vendredi 16:15 → Dimanche 19:00 (fin officielle)
-2. **Milieu** = (début + fin) / 2
-3. **Précision** : Jour, heure, minute (ex: 27/12/2025 17:37:30)
-
-**Exemple de calcul** :
-```
-Début : 19/12/2025 16:15:00
-Fin   : 04/01/2026 19:00:00
-Durée : 16 jours, 2 heures, 45 minutes
-Milieu : 27/12/2025 17:37:30
-```
+Les dates sont calculées automatiquement selon la règle sélectionnée et la parité de l'année (définie par `reference_year`).
 
 ---
 
@@ -401,9 +415,9 @@ vacation_rule: "first_half"
 school_level: "primary"
 ```
 
-**Résultat** (Vacances de Noël 2025) :
-- Début : 19/12/2025 16:15
-- Fin : 27/12/2025 17:37:30 (milieu calculé)
+**Résultat** :
+- 2025 (impaire) : ✅ 1ère moitié (19/12/2025 16:15 → 27/12/2025 17:37:30)
+- 2026 (paire) : ❌ Pas de garde (car c'est la 2ème partie, l'autre parent a la garde)
 
 ---
 
@@ -421,8 +435,10 @@ school_level: "primary"
 
 **Résultat** :
 - 2025 (impaire) : ✅ Juillet 2025 complet
-- 2026 (paire) : ❌ Pas de garde en juillet
+- 2026 (paire) : ❌ Pas de garde en juillet (et **pas de garde en août non plus**, car vous n'avez configuré que juillet)
 - 2027 (impaire) : ✅ Juillet 2027 complet
+
+> ⚠️ **Note** : Cette configuration ne donne que juillet. Pour avoir automatiquement juillet (années impaires) ET août (années paires), utilisez `summer_rule: "summer_parity_auto"` (voir Exemple 4).
 
 ---
 
@@ -440,12 +456,57 @@ school_level: "primary"
 
 **Résultat** :
 - 2024 (paire) : ✅ Août 2024 complet
-- 2025 (impaire) : ❌ Pas de garde en août
+- 2025 (impaire) : ❌ Pas de garde en août (et **pas de garde en juillet non plus**, car vous n'avez configuré que août)
 - 2026 (paire) : ✅ Août 2026 complet
+
+> ⚠️ **Note** : Cette configuration ne donne que août. Pour avoir automatiquement juillet (années impaires) ET août (années paires), utilisez `summer_rule: "summer_parity_auto"` (voir Exemple 4).
 
 ---
 
-### Exemple 4 : Quinzaine de juillet
+### Exemple 4 : Règle automatique selon année (paire=Août, impaire=Juillet)
+
+**Situation** : Année paire = Août complet, Année impaire = Juillet complet.
+
+**Configuration** :
+```yaml
+zone: "C"
+vacation_rule: "july"  # ou "august", "first_week", "second_week", "first_half", "second_half"
+summer_rule: "summer_parity_auto"
+school_level: "primary"
+```
+
+**Résultats selon `vacation_rule`** :
+
+1. **Avec `july` ou `august` (mois complet)** :
+   - 2024 (paire) : ✅ Août 2024 complet
+   - 2025 (impaire) : ✅ Juillet 2025 complet
+   - 2026 (paire) : ✅ Août 2026 complet
+   - 2027 (impaire) : ✅ Juillet 2027 complet
+
+2. **Avec `first_half` (1ère quinzaine)** :
+   - 2025 (impaire) : ✅ Juillet - 1ère quinzaine (1-15 juillet)
+   - 2026 (paire) : ❌ Pas de garde (car `first_half` = première partie = années impaires)
+
+3. **Avec `second_half` (2ème quinzaine)** :
+   - 2024 (paire) : ✅ Août - 2ème quinzaine (16-31 août)
+   - 2025 (impaire) : ❌ Pas de garde (car `second_half` = seconde partie = années paires)
+
+4. **Avec `first_week` (1ère semaine)** :
+   - 2025 (impaire) : ✅ Juillet - 1ère semaine
+   - 2026 (paire) : ❌ Pas de garde
+
+5. **Avec `second_week` (2ème semaine)** :
+   - 2024 (paire) : ✅ Août - 2ème semaine
+   - 2025 (impaire) : ❌ Pas de garde
+
+> **Note** : 
+> - Cette règle s'applique automatiquement selon la parité de l'année des vacances
+> - Le champ `reference_year` dans le masque de saisie n'est **pas utilisé** pour cette règle
+> - Pour les découpages (semaines/quinzaines), seule la partie correspondant à la parité est appliquée
+
+---
+
+### Exemple 5 : Quinzaine de juillet
 
 **Situation** : Vous avez la 1ère quinzaine de juillet (1-15 juillet).
 
@@ -463,22 +524,6 @@ school_level: "primary"
 
 ---
 
-### Exemple 5 : Première semaine fixe
-
-**Situation** : Vous avez toujours la première semaine, quelle que soit l'année.
-
-**Configuration** :
-```yaml
-zone: "C"
-vacation_rule: "first_week"
-school_level: "primary"
-```
-
-**Résultat** (Toutes les vacances) :
-- Semaine 1 : ✅ Garde
-- Semaine 2 : ❌ Pas de garde
-
----
 
 ## 🔧 Dépannage
 
@@ -495,10 +540,10 @@ school_level: "primary"
 2. **Zone** : Vérifiez que la zone correspond à votre académie
 3. **Année** : Vérifiez que l'année de référence est correcte pour les règles basées sur la parité
 
-### Le milieu n'est pas calculé correctement
+### Les règles ne s'appliquent pas correctement
 
-1. **Règle** : Vérifiez que vous utilisez une règle qui calcule le milieu (`first_half`, `first_week_odd_year`, etc.)
-2. **Période effective** : Le calcul se base sur Vendredi 16:15 → Dimanche 19:00
+1. **Règle** : Vérifiez que vous utilisez une règle valide (`july`, `august`, ou `custom`)
+2. **Reference_year** : Vérifiez que `reference_year` est correctement configuré (paire/impaire)
 3. **Logs** : Consultez les logs pour voir les dates calculées
 
 ---

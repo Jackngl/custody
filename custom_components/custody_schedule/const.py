@@ -74,6 +74,7 @@ VACATION_RULES = [
     "custom",
 ]
 SUMMER_RULES = [
+    "summer_parity_auto",
     "july_first_half",
     "july_second_half",
     "august_first_half",

@@ -107,10 +107,20 @@
       "custom": "Personnalisé"
     },
     "vacation_rule": {
-      "first_week": "1ère semaine",
-      "second_week": "2ème semaine",
-      "first_half": "1ère moitié",
-      "second_half": "2ème moitié",
+      "first_week": "1ère semaine (années impaires uniquement)",
+      "second_week": "2ème semaine (années paires uniquement)",
+      "first_half": "1ère moitié (années impaires uniquement)",
+      "second_half": "2ème moitié (années paires uniquement)",
+      "even_weeks": "Semaines paires",
+      "odd_weeks": "Semaines impaires",
+      "even_weekends": "Week-ends semaines paires",
+      "odd_weekends": "Week-ends semaines impaires",
+      "july": "Juillet complet",
+      "august": "Août complet",
+      "first_week": "1ère semaine (années impaires uniquement)",
+      "second_week": "2ème semaine (années paires uniquement)",
+      "first_half": "1ère moitié (années impaires uniquement)",
+      "second_half": "2ème moitié (années paires uniquement)",
       "even_weeks": "Semaines paires",
       "odd_weeks": "Semaines impaires",
       "even_weekends": "Week-ends semaines paires",
@@ -120,6 +130,7 @@
       "custom": "Personnalisé"
     },
     "summer_rule": {
+      "summer_parity_auto": "Automatique selon année (paire=Août, impaire=Juillet)",
       "july_first_half": "Juillet - 1ère moitié (1-15 juillet)",
       "july_second_half": "Juillet - 2ème moitié (16-31 juillet)",
       "august_first_half": "Août - 1ère moitié (1-15 août)",

@@ -165,16 +165,8 @@ def _start_day_selector() -> selector.SelectSelector:
 def _vacation_rule_selector() -> selector.SelectSelector:
     """Create a vacation rule selector with French labels."""
     translations = {
-        "first_week": "1ère semaine",
-        "second_week": "2ème semaine",
-        "first_half": "1ère moitié",
-        "second_half": "2ème moitié",
-        "even_weeks": "Semaines paires",
-        "odd_weeks": "Semaines impaires",
-        "even_weekends": "Week-ends semaines paires",
-        "odd_weekends": "Week-ends semaines impaires",
-        "july": "Juillet complet (selon année paire/impaire)",
-        "august": "Août complet (selon année paire/impaire)",
+        "july": "Juillet complet",
+        "august": "Août complet",
         "custom": "Personnalisé",
     }
     options_list = [{"value": "", "label": "Aucune"}]
@@ -192,6 +184,7 @@ def _vacation_rule_selector() -> selector.SelectSelector:
 def _summer_rule_selector() -> selector.SelectSelector:
     """Create a summer rule selector with French labels."""
     translations = {
+        "summer_parity_auto": "Automatique selon année (paire=Août, impaire=Juillet)",
         "july_first_half": "Juillet - 1ère moitié (1-15 juillet)",
         "july_second_half": "Juillet - 2ème moitié (16-31 juillet)",
         "august_first_half": "Août - 1ère moitié (1-15 août)",
@@ -365,9 +358,13 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Use saved data if user goes back, convert None to empty string for selectors
         vacation_rule_default = self._data.get(CONF_VACATION_RULE) or ""
         summer_rule_default = self._data.get(CONF_SUMMER_RULE) or ""
+        # Get reference_year from custody step or default to "even"
+        reference_year_default = self._data.get(CONF_REFERENCE_YEAR, "even")
+        
         schema = vol.Schema(
             {
                 vol.Required(CONF_ZONE, default=self._data.get(CONF_ZONE, "A")): _zone_selector(),
+                vol.Required(CONF_REFERENCE_YEAR, default=reference_year_default): _reference_year_selector(),
                 vol.Optional(CONF_VACATION_RULE, default=vacation_rule_default): _vacation_rule_selector(),
                 vol.Optional(CONF_SUMMER_RULE, default=summer_rule_default): _summer_rule_selector(),
             }
@@ -550,9 +547,13 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         # Convert None to empty string for selectors
         vacation_rule_default = data.get(CONF_VACATION_RULE) or ""
         summer_rule_default = data.get(CONF_SUMMER_RULE) or ""
+        # Get reference_year from data or default to "even"
+        reference_year_default = data.get(CONF_REFERENCE_YEAR, "even")
+        
         schema = vol.Schema(
             {
                 vol.Required(CONF_ZONE, default=data.get(CONF_ZONE, "A")): _zone_selector(),
+                vol.Required(CONF_REFERENCE_YEAR, default=reference_year_default): _reference_year_selector(),
                 vol.Optional(CONF_VACATION_RULE, default=vacation_rule_default): _vacation_rule_selector(),
                 vol.Optional(CONF_SUMMER_RULE, default=summer_rule_default): _summer_rule_selector(),
             }
