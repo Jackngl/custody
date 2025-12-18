@@ -224,7 +224,14 @@ def _summer_rule_selector() -> selector.SelectSelector:
 
 
 def _time_to_str(value: Any, default: str) -> str:
-    """Convert TimeSelector output to HH:MM string."""
+    """Convert TimeSelector output to HH:MM string.
+    
+    Handles various formats:
+    - datetime.time objects
+    - "HH:MM" strings
+    - "HH:MM:SS" strings (extracts HH:MM)
+    - None (returns default)
+    """
     if value is None:
         return default
     if hasattr(value, "strftime"):
@@ -233,9 +240,14 @@ def _time_to_str(value: Any, default: str) -> str:
     parts = text.split(":")
     if len(parts) >= 2:
         try:
-            return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
+            # Extract only hours and minutes, ignore seconds if present
+            hour = int(parts[0])
+            minute = int(parts[1])
+            # Validate range
+            if 0 <= hour <= 23 and 0 <= minute <= 59:
+                return f"{hour:02d}:{minute:02d}"
         except (TypeError, ValueError):
-            return default
+            pass
     return default
 
 
@@ -309,33 +321,47 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             cleaned = dict(user_input)
             cleaned[CONF_ARRIVAL_TIME] = _time_to_str(user_input.get(CONF_ARRIVAL_TIME), "08:00")
             cleaned[CONF_DEPARTURE_TIME] = _time_to_str(user_input.get(CONF_DEPARTURE_TIME), "19:00")
+            # For even_weekends/odd_weekends, start_day is not used (based on ISO week parity)
+            # But we still save it for other custody types
             self._data.update(cleaned)
             return await self.async_step_vacations()
 
         # Use saved data if user goes back
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_CUSTODY_TYPE, default=self._data.get(CONF_CUSTODY_TYPE, "alternate_week")
-                ): _custody_type_selector(),
-                vol.Required(
-                    CONF_REFERENCE_YEAR, default=self._data.get(CONF_REFERENCE_YEAR, "even")
-                ): _reference_year_selector(),
-                vol.Required(
-                    CONF_START_DAY, default=self._data.get(CONF_START_DAY, "monday")
-                ): _start_day_selector(),
-                vol.Required(
-                    CONF_ARRIVAL_TIME, default=self._data.get(CONF_ARRIVAL_TIME, "08:00")
-                ): selector.TimeSelector(),
-                vol.Required(
-                    CONF_DEPARTURE_TIME, default=self._data.get(CONF_DEPARTURE_TIME, "19:00")
-                ): selector.TimeSelector(),
-                vol.Optional(
-                    CONF_SCHOOL_LEVEL, default=self._data.get(CONF_SCHOOL_LEVEL, "primary")
-                ): _school_level_selector(),
-                vol.Optional(CONF_LOCATION, default=self._data.get(CONF_LOCATION, "")): cv.string,
-            }
-        )
+        custody_type = self._data.get(CONF_CUSTODY_TYPE, "alternate_week")
+        # start_day is only relevant for custody types that use cycles (not even_weekends/odd_weekends)
+        show_start_day = custody_type not in ("even_weekends", "odd_weekends")
+        
+        schema_dict = {
+            vol.Required(
+                CONF_CUSTODY_TYPE, default=custody_type
+            ): _custody_type_selector(),
+            vol.Required(
+                CONF_REFERENCE_YEAR, default=self._data.get(CONF_REFERENCE_YEAR, "even")
+            ): _reference_year_selector(),
+            vol.Required(
+                CONF_ARRIVAL_TIME, default=self._data.get(CONF_ARRIVAL_TIME, "08:00")
+            ): selector.TimeSelector(),
+            vol.Required(
+                CONF_DEPARTURE_TIME, default=self._data.get(CONF_DEPARTURE_TIME, "19:00")
+            ): selector.TimeSelector(),
+            vol.Optional(
+                CONF_SCHOOL_LEVEL, default=self._data.get(CONF_SCHOOL_LEVEL, "primary")
+            ): _school_level_selector(),
+            vol.Optional(CONF_LOCATION, default=self._data.get(CONF_LOCATION, "")): cv.string,
+        }
+        
+        # Only show start_day for custody types that use it
+        if show_start_day:
+            schema_dict[vol.Required(
+                CONF_START_DAY, default=self._data.get(CONF_START_DAY, "monday")
+            )] = _start_day_selector()
+        else:
+            # Still include it but hidden, default to friday for weekends
+            schema_dict[vol.Optional(
+                CONF_START_DAY, default="friday"
+            )] = _start_day_selector()
+        
+        schema = vol.Schema(schema_dict)
         return self.async_show_form(step_id="custody", data_schema=schema)
 
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -464,26 +490,39 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         """Modify custody type, reference year, and start day."""
         if user_input:
             cleaned = dict(user_input)
+            # For even_weekends/odd_weekends, start_day is not used (based on ISO week parity)
             self._data.update(cleaned)
             return self.async_create_entry(title="", data=self._data)
 
         data = {**self._entry.data, **(self._entry.options or {})}
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_CUSTODY_TYPE, default=data.get(CONF_CUSTODY_TYPE, "alternate_week")
-                ): _custody_type_selector(),
-                vol.Required(
-                    CONF_REFERENCE_YEAR, default=data.get(CONF_REFERENCE_YEAR, "even")
-                ): _reference_year_selector(),
-                vol.Required(
-                    CONF_START_DAY, default=data.get(CONF_START_DAY, "monday")
-                ): _start_day_selector(),
-                vol.Optional(
-                    CONF_SCHOOL_LEVEL, default=data.get(CONF_SCHOOL_LEVEL, "primary")
-                ): _school_level_selector(),
-            }
-        )
+        custody_type = data.get(CONF_CUSTODY_TYPE, "alternate_week")
+        # start_day is only relevant for custody types that use cycles (not even_weekends/odd_weekends)
+        show_start_day = custody_type not in ("even_weekends", "odd_weekends")
+        
+        schema_dict = {
+            vol.Required(
+                CONF_CUSTODY_TYPE, default=custody_type
+            ): _custody_type_selector(),
+            vol.Required(
+                CONF_REFERENCE_YEAR, default=data.get(CONF_REFERENCE_YEAR, "even")
+            ): _reference_year_selector(),
+            vol.Optional(
+                CONF_SCHOOL_LEVEL, default=data.get(CONF_SCHOOL_LEVEL, "primary")
+            ): _school_level_selector(),
+        }
+        
+        # Only show start_day for custody types that use it
+        if show_start_day:
+            schema_dict[vol.Required(
+                CONF_START_DAY, default=data.get(CONF_START_DAY, "monday")
+            )] = _start_day_selector()
+        else:
+            # Still include it but hidden, default to friday for weekends
+            schema_dict[vol.Optional(
+                CONF_START_DAY, default="friday"
+            )] = _start_day_selector()
+        
+        schema = vol.Schema(schema_dict)
         return self.async_show_form(step_id="custody", data_schema=schema)
 
     async def async_step_schedule(self, user_input: dict[str, Any] | None = None) -> FlowResult:
