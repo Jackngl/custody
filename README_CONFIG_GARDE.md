@@ -61,7 +61,7 @@ L'application supporte **8 types de garde** pour les weekends et semaines :
 
 | Type | Code | Description | Cycle | Utilisation |
 |------|------|-------------|-------|-------------|
-| **Semaines alternées (1/1)** | `alternate_week` | Garde une semaine complète sur deux | 14 jours | Garde hebdomadaire alternée classique (basée sur date de référence) |
+| **Semaines alternées (1/1)** | `alternate_week` | Garde hebdomadaire sur 2 semaines (14j) alternées | 14 jours | Garde hebdomadaire alternée classique (basée sur date de référence) |
 | **Semaines alternées - semaines paires** | `alternate_week_even` | Garde toutes les semaines ISO paires | 7 jours | Basé sur la parité ISO des semaines |
 | **Semaines alternées - semaines impaires** | `alternate_week_odd` | Garde toutes les semaines ISO impaires | 7 jours | Complémentaire des semaines paires |
 | **Week-ends semaines paires** | `even_weekends` | Garde tous les weekends des semaines ISO paires | 7 jours | Basé sur la parité ISO des semaines |
