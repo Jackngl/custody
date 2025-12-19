@@ -69,7 +69,6 @@ from .const import (
     CONF_SCHOOL_LEVEL,
     CONF_START_DAY,
     CONF_SUMMER_RULE,
-    CONF_VACATION_RULE,
     CONF_ZONE,
     SUMMER_RULES,
     VACATION_RULES,
@@ -508,11 +507,9 @@ class CustodyScheduleManager:
         holidays = await self._holidays.async_list(zone, now.year)
         windows: list[CustodyWindow] = []
         summer_rule = self._config.get(CONF_SUMMER_RULE)
-        rule = (
-            self._config.get(CONF_VACATION_RULE)
-            if self._config.get(CONF_VACATION_RULE) in VACATION_RULES
-            else None
-        )
+        # vacation_rule is now automatic based on reference_year
+        # For non-summer holidays, use automatic parity logic: odd year = first part, even year = second part
+        rule = None  # Will be determined automatically based on reference_year and holiday type
 
         for holiday in holidays:
             start, end, midpoint = self._effective_holiday_bounds(holiday)
@@ -535,14 +532,29 @@ class CustodyScheduleManager:
                 windows.extend(self._summer_windows(holiday, summer_rule))
                 applied = True
 
-            if not rule or applied:
+            if applied:
+                continue
+
+            # Automatic vacation rule based on reference_year parity
+            # Get reference_year to determine automatic rule
+            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            is_even_year = start.year % 2 == 0
+            
+            # Determine automatic rule: if reference_year is "even", apply second part logic in even years
+            # If reference_year is "odd", apply first part logic in odd years
+            # Default: use first_half/second_half logic for automatic splitting
+            if reference_year == "even":
+                # Even reference: apply second part (second_half) in even years
+                rule = "second_half" if is_even_year else None
+            else:
+                # Odd reference: apply first part (first_half) in odd years
+                rule = "first_half" if not is_even_year else None
+
+            if not rule:
                 continue
 
             window_start = start
             window_end = end
-            
-            # Règle de parité pour toutes les vacances : année paire = 2ème partie, année impaire = 1ère partie
-            is_even_year = start.year % 2 == 0
 
             if rule == "first_week":
                 # 1ère semaine : uniquement en années impaires
@@ -664,19 +676,29 @@ class CustodyScheduleManager:
         windows: list[CustodyWindow] = []
         is_even_year = start.year % 2 == 0
         
-        # Get vacation_rule to determine if we need weeks/halves or full months
-        vacation_rule = (
-            self._config.get(CONF_VACATION_RULE) if self._config.get(CONF_VACATION_RULE) in VACATION_RULES
-            else None
-        )
+        # Get reference_year to determine automatic vacation rule
+        # For summer_parity_auto, we use reference_year to determine if we need weeks/halves or full months
+        reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+        # vacation_rule is now automatic: determined by reference_year and year parity
+        # For summer_parity_auto, we'll use first_week/first_half for odd years, second_week/second_half for even years
+        vacation_rule = None  # Will be determined automatically based on reference_year
 
         if rule == "summer_parity_auto":
             # Règle spéciale : Année paire = Août, Année impaire = Juillet
             # S'applique aussi aux découpages : paire = seconde partie, impaire = première partie
             
-            # Si vacation_rule est first_week ou first_half : année impaire = Juillet (1ère semaine/quinzaine)
-            # Si vacation_rule est second_week ou second_half : année paire = Août (2ème semaine/quinzaine)
-            # Sinon : mois complet selon parité
+            # Automatic rule based on reference_year:
+            # - If reference_year is "even": even years = August (second part), odd years = July (first part)
+            # - If reference_year is "odd": odd years = August (second part), even years = July (first part)
+            # Default: use first_half logic for first part, second_half for second part
+            
+            # Determine which part based on reference_year and current year parity
+            if reference_year == "even":
+                # Even reference: even years = second part (August), odd years = first part (July)
+                vacation_rule = "second_half" if is_even_year else "first_half"
+            else:
+                # Odd reference: odd years = second part (August), even years = first part (July)
+                vacation_rule = "second_half" if not is_even_year else "first_half"
             
             if vacation_rule in ("first_week", "first_half"):
                 # Année impaire : Juillet (1ère semaine ou 1ère quinzaine)
@@ -1056,9 +1078,8 @@ class CustodyScheduleManager:
                 }
             )
 
-        vacation_rule = (
-            self._config.get(CONF_VACATION_RULE) if self._config.get(CONF_VACATION_RULE) in VACATION_RULES else None
-        )
+        # vacation_rule is now automatic based on reference_year
+        reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
         summer_rule = self._config.get(CONF_SUMMER_RULE) if self._config.get(CONF_SUMMER_RULE) in SUMMER_RULES else None
 
         def _custody_segment_for_holiday(holiday_obj) -> tuple[datetime, datetime]:
@@ -1074,13 +1095,22 @@ class CustodyScheduleManager:
                 # Other summer rules generate their own windows; fall back to the full effective interval
                 return eff_start, eff_end
 
-            if not vacation_rule:
-                return eff_start, eff_end
-
-            if vacation_rule in ("first_half", "first_week_even_year", "first_week_odd_year"):
-                return eff_start, mid
-            if vacation_rule in ("second_half", "second_week_even_year", "second_week_odd_year"):
-                return mid, eff_end
+            # Automatic vacation rule based on reference_year parity
+            is_even_year = eff_start.year % 2 == 0
+            if reference_year == "even":
+                # Even reference: even years = second part (second_half)
+                if is_even_year:
+                    return mid, eff_end
+                else:
+                    # Odd years: no custody (first part goes to other parent)
+                    return eff_start, eff_start  # No custody
+            else:
+                # Odd reference: odd years = first part (first_half)
+                if not is_even_year:
+                    return eff_start, mid
+                else:
+                    # Even years: no custody (second part goes to other parent)
+                    return eff_start, eff_start  # No custody
 
             # For other rules (weekends parity, july/august slices, etc.), default to the full effective interval
             return eff_start, eff_end

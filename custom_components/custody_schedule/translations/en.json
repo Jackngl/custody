@@ -28,7 +28,7 @@
         "description": "Select the school zone and holiday rules.",
         "data": {
           "zone": "School zone",
-          "vacation_rule": "Vacation rule",
+          "reference_year": "Reference year (even/odd)",
           "summer_rule": "Summer break rule"
         }
       },
@@ -92,19 +92,6 @@
       "alternate_weekend": "Alternating weekends",
       "two_two_three": "2-2-3",
       "two_two_five_five": "2-2-5-5",
-      "custom": "Custom"
-    },
-    "vacation_rule": {
-      "first_week": "First week (odd years only)",
-      "second_week": "Second week (even years only)",
-      "first_half": "First half (odd years only)",
-      "second_half": "Second half (even years only)",
-      "even_weeks": "Even weeks",
-      "odd_weeks": "Odd weeks",
-      "even_weekends": "Even week weekends",
-      "odd_weekends": "Odd week weekends",
-      "july": "July complete (based on even/odd year)",
-      "august": "August complete (based on even/odd year)",
       "custom": "Custom"
     },
     "summer_rule": {

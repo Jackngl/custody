@@ -29,7 +29,7 @@
         "description": "Configurer les règles de garde pendant les vacances scolaires. Les vacances priment sur la garde classique.",
         "data": {
           "zone": "Zone scolaire",
-          "vacation_rule": "Règle vacances",
+          "reference_year": "Année de référence (paire/impaire)",
           "summer_rule": "Règle grandes vacances"
         }
       },
@@ -104,29 +104,6 @@
       "alternate_weekend": "Week-ends alternés",
       "two_two_three": "2-2-3",
       "two_two_five_five": "2-2-5-5",
-      "custom": "Personnalisé"
-    },
-    "vacation_rule": {
-      "first_week": "1ère semaine (années impaires uniquement)",
-      "second_week": "2ème semaine (années paires uniquement)",
-      "first_half": "1ère moitié (années impaires uniquement)",
-      "second_half": "2ème moitié (années paires uniquement)",
-      "even_weeks": "Semaines paires",
-      "odd_weeks": "Semaines impaires",
-      "even_weekends": "Week-ends semaines paires",
-      "odd_weekends": "Week-ends semaines impaires",
-      "july": "Juillet complet",
-      "august": "Août complet",
-      "first_week": "1ère semaine (années impaires uniquement)",
-      "second_week": "2ème semaine (années paires uniquement)",
-      "first_half": "1ère moitié (années impaires uniquement)",
-      "second_half": "2ème moitié (années paires uniquement)",
-      "even_weeks": "Semaines paires",
-      "odd_weeks": "Semaines impaires",
-      "even_weekends": "Week-ends semaines paires",
-      "odd_weekends": "Week-ends semaines impaires",
-      "july": "Juillet complet",
-      "august": "Août complet",
       "custom": "Personnalisé"
     },
     "summer_rule": {
