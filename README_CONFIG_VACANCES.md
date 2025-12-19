@@ -412,24 +412,35 @@ Les dates sont calculées automatiquement selon la règle sélectionnée et la p
 
 **Situation** : Vous avez la 1ère moitié, l'autre parent a la 2ème moitié.
 
-**Configuration** :
+**Configuration Parent A** :
 ```yaml
 zone: "C"
 reference_year: "odd"  # 1ère partie (1ère moitié)
 school_level: "primary"
 ```
 
-**Résultat** (Vacances de Noël) :
+**Configuration Parent B** :
+```yaml
+zone: "C"
+reference_year: "even"  # 2ème partie (2ème moitié)
+school_level: "primary"
+```
+
+**Résultat Parent A** (Vacances de Noël) :
 - 2025 (impaire) : ✅ 1ère moitié (19/12/2025 16:15 → 27/12/2025 17:37:30)
-- 2026 (paire) : ❌ Pas de garde (car c'est la 2ème partie, l'autre parent a la garde)
+- 2026 (paire) : ❌ Pas de garde (car c'est la 2ème partie, le parent B a la garde)
+
+**Résultat Parent B** (Vacances de Noël) :
+- 2025 (impaire) : ❌ Pas de garde (car c'est la 1ère partie, le parent A a la garde)
+- 2026 (paire) : ✅ 2ème moitié (27/12/2026 17:37:30 → 03/01/2027 19:00)
 
 ---
 
 ### Exemple 2 : Règle automatique été avec `reference_year`
 
-**Situation** : Utilisation de `summer_parity_auto` avec `reference_year: "even"`.
+**Situation** : Utilisation de `summer_parity_auto` avec `reference_year` pour partager équitablement juillet et août.
 
-**Configuration** :
+**Configuration Parent A** :
 ```yaml
 zone: "C"
 reference_year: "even"  # Détermine la logique pour l'été ET les autres vacances
@@ -437,27 +448,35 @@ summer_rule: "summer_parity_auto"  # Automatique selon référence
 school_level: "primary"
 ```
 
-**Résultat avec `reference_year: "even"`** :
+**Configuration Parent B** :
+```yaml
+zone: "C"
+reference_year: "odd"  # Détermine la logique pour l'été ET les autres vacances
+summer_rule: "summer_parity_auto"  # Automatique selon référence
+school_level: "primary"
+```
+
+**Résultat Parent A** (`reference_year: "even"`) :
 - 2024 (paire) : ✅ Août 2024 complet
 - 2025 (impaire) : ✅ Juillet 2025 complet
 - 2026 (paire) : ✅ Août 2026 complet
 - 2027 (impaire) : ✅ Juillet 2027 complet
 
-**Résultat avec `reference_year: "odd"`** (autre parent) :
-- 2024 (paire) : ✅ Juillet 2024 complet
-- 2025 (impaire) : ✅ Août 2025 complet
-- 2026 (paire) : ✅ Juillet 2026 complet
-- 2027 (impaire) : ✅ Août 2027 complet
+**Résultat Parent B** (`reference_year: "odd"`) :
+- 2024 (paire) : ✅ Juillet 2024 complet (complémentaire du parent A)
+- 2025 (impaire) : ✅ Août 2025 complet (complémentaire du parent A)
+- 2026 (paire) : ✅ Juillet 2026 complet (complémentaire du parent A)
+- 2027 (impaire) : ✅ Août 2027 complet (complémentaire du parent A)
 
-> **Note** : Cette règle utilise `reference_year` pour déterminer automatiquement le mois selon la parité de l'année. Les deux parents (avec des `reference_year` différents) obtiennent des mois différents chaque année, garantissant une alternance équitable.
+> **Note** : Cette règle utilise `reference_year` pour déterminer automatiquement le mois selon la parité de l'année. Les deux parents (avec des `reference_year` différents) obtiennent des mois différents chaque année, garantissant une alternance équitable. Par exemple, en 2025 (année impaire), le parent A a juillet complet et le parent B a août complet.
 
 ---
 
 ### Exemple 3 : Quinzaine de juillet avec `reference_year`
 
-**Situation** : Vous avez la 1ère quinzaine de juillet selon la parité de l'année.
+**Situation** : Partage de la 1ère quinzaine de juillet selon la parité de l'année.
 
-**Configuration** :
+**Configuration Parent A** :
 ```yaml
 zone: "C"
 reference_year: "even"  # Détermine quand la règle s'applique
@@ -465,23 +484,33 @@ summer_rule: "july_first_half"  # 1ère moitié de juillet
 school_level: "primary"
 ```
 
-**Résultat avec `reference_year: "even"`** :
+**Configuration Parent B** :
+```yaml
+zone: "C"
+reference_year: "odd"  # Détermine quand la règle s'applique
+summer_rule: "july_first_half"  # 1ère moitié de juillet
+school_level: "primary"
+```
+
+**Résultat Parent A** (`reference_year: "even"`) :
 - 2024 (paire) : ❌ Ne s'applique pas
 - 2025 (impaire) : ✅ 1-15 juillet 2025
 - 2026 (paire) : ❌ Ne s'applique pas
 
-**Résultat avec `reference_year: "odd"`** (autre parent) :
-- 2024 (paire) : ✅ 1-15 juillet 2024
-- 2025 (impaire) : ❌ Ne s'applique pas
-- 2026 (paire) : ✅ 1-15 juillet 2026
+**Résultat Parent B** (`reference_year: "odd"`) :
+- 2024 (paire) : ✅ 1-15 juillet 2024 (complémentaire du parent A)
+- 2025 (impaire) : ❌ Ne s'applique pas (le parent A a la garde)
+- 2026 (paire) : ✅ 1-15 juillet 2026 (complémentaire du parent A)
+
+> **Note** : Les deux parents utilisent la même règle `july_first_half`, mais avec des `reference_year` différents. En 2025 (année impaire), seul le parent A a la garde. En 2024 et 2026 (années paires), seul le parent B a la garde.
 
 ---
 
 ### Exemple 4 : Quinzaine d'août avec `reference_year`
 
-**Situation** : Vous avez la 2ème quinzaine d'août selon la parité de l'année.
+**Situation** : Partage de la 2ème quinzaine d'août selon la parité de l'année.
 
-**Configuration** :
+**Configuration Parent A** :
 ```yaml
 zone: "C"
 reference_year: "even"  # Détermine quand la règle s'applique
@@ -489,15 +518,25 @@ summer_rule: "august_second_half"  # 2ème moitié d'août
 school_level: "primary"
 ```
 
-**Résultat avec `reference_year: "even"`** :
+**Configuration Parent B** :
+```yaml
+zone: "C"
+reference_year: "odd"  # Détermine quand la règle s'applique
+summer_rule: "august_second_half"  # 2ème moitié d'août
+school_level: "primary"
+```
+
+**Résultat Parent A** (`reference_year: "even"`) :
 - 2024 (paire) : ✅ 16-31 août 2024
 - 2025 (impaire) : ❌ Ne s'applique pas
 - 2026 (paire) : ✅ 16-31 août 2026
 
-**Résultat avec `reference_year: "odd"`** (autre parent) :
-- 2024 (paire) : ❌ Ne s'applique pas
-- 2025 (impaire) : ✅ 16-31 août 2025
-- 2026 (paire) : ❌ Ne s'applique pas
+**Résultat Parent B** (`reference_year: "odd"`) :
+- 2024 (paire) : ❌ Ne s'applique pas (le parent A a la garde)
+- 2025 (impaire) : ✅ 16-31 août 2025 (complémentaire du parent A)
+- 2026 (paire) : ❌ Ne s'applique pas (le parent A a la garde)
+
+> **Note** : Les deux parents utilisent la même règle `august_second_half`, mais avec des `reference_year` différents. En 2024 et 2026 (années paires), seul le parent A a la garde. En 2025 (année impaire), seul le parent B a la garde.
 
 ---
 
