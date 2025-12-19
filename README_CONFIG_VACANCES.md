@@ -213,23 +213,27 @@ school_level: "primary"
 #### 2. Deuxième partie (`reference_year: "even"`)
 
 **Fonctionnement** :
-- Garde la **deuxième partie** des vacances (2ème semaine, 2ème moitié, Août pour l'été)
+- Garde la **deuxième partie** des vacances pour **toutes les vacances scolaires**
 - **Uniquement en années paires** (2024, 2026, ...)
-- Années impaires : pas de garde (car c'est la 1ère partie)
+- Années impaires : pas de garde (car c'est la 1ère partie, l'autre parent a la garde)
 - **Milieu calculé automatiquement** pour les règles de moitié : Date/heure exacte au milieu de la période effective
 - Début : Milieu exact (pour moitié) ou début de la 2ème semaine
 - Fin : Dimanche 19:00 (fin officielle)
+- **S'applique à** : Noël, Hiver, Printemps, Toussaint, Été (si aucune règle d'été spécifique)
 
-**Configuration** :
+**Configuration Parent B** :
 ```yaml
 zone: "C"
-reference_year: "even"  # 2ème partie
+reference_year: "even"  # 2ème partie en années paires
 school_level: "primary"
 ```
 
-**Exemple** (Vacances de Noël 2026) :
-- 2026 (paire) : ✅ 2ème moitié (27/12/2026 17:37:30 → 03/01/2027 19:00)
-- 2025 (impaire) : ❌ Pas de garde (car c'est la 1ère partie)
+**Exemples pour Parent B** :
+- **Vacances de Noël 2025** (impaire) : ❌ Pas de garde (car c'est la 1ère partie, le parent A a la garde)
+- **Vacances de Noël 2026** (paire) : ✅ 2ème moitié (27/12/2026 17:37:30 → 03/01/2027 19:00)
+- **Vacances d'Hiver 2026** (paire) : ✅ 2ème moitié
+- **Vacances de Printemps 2026** (paire) : ✅ 2ème moitié
+- **Vacances de la Toussaint 2026** (paire) : ✅ 2ème moitié
 
 ---
 
@@ -412,29 +416,39 @@ Les dates sont calculées automatiquement selon la règle sélectionnée et la p
 
 ### Exemple 1 : Partage par moitié (toutes vacances)
 
-**Situation** : Vous avez la 1ère moitié, l'autre parent a la 2ème moitié.
+**Situation** : Partage équitable de toutes les vacances (Noël, Hiver, Printemps, Toussaint, Été) par moitié selon la parité de l'année.
 
 **Configuration Parent A** :
 ```yaml
 zone: "C"
-reference_year: "odd"  # 1ère partie (1ère moitié)
+reference_year: "odd"  # 1ère partie (1ère moitié) en années impaires
 school_level: "primary"
 ```
 
 **Configuration Parent B** :
 ```yaml
 zone: "C"
-reference_year: "even"  # 2ème partie (2ème moitié)
+reference_year: "even"  # 2ème partie (2ème moitié) en années paires
 school_level: "primary"
 ```
 
-**Résultat Parent A** (Vacances de Noël) :
-- 2025 (impaire) : ✅ 1ère moitié (19/12/2025 16:15 → 27/12/2025 17:37:30)
-- 2026 (paire) : ❌ Pas de garde (car c'est la 2ème partie, le parent B a la garde)
+**Résultat Parent A** (toutes vacances) :
+- **2025 (impaire)** : ✅ 1ère moitié de toutes les vacances
+  - Noël 2025 : 19/12/2025 16:15 → 27/12/2025 17:37:30
+  - Hiver 2025 : 1ère moitié
+  - Printemps 2025 : 1ère moitié
+  - Toussaint 2025 : 1ère moitié
+- **2026 (paire)** : ❌ Pas de garde (car c'est la 2ème partie, le parent B a la garde)
 
-**Résultat Parent B** (Vacances de Noël) :
-- 2025 (impaire) : ❌ Pas de garde (car c'est la 1ère partie, le parent A a la garde)
-- 2026 (paire) : ✅ 2ème moitié (27/12/2026 17:37:30 → 03/01/2027 19:00)
+**Résultat Parent B** (toutes vacances) :
+- **2025 (impaire)** : ❌ Pas de garde (car c'est la 1ère partie, le parent A a la garde)
+- **2026 (paire)** : ✅ 2ème moitié de toutes les vacances
+  - Noël 2026 : 27/12/2026 17:37:30 → 03/01/2027 19:00
+  - Hiver 2026 : 2ème moitié
+  - Printemps 2026 : 2ème moitié
+  - Toussaint 2026 : 2ème moitié
+
+> **Note** : Cette logique s'applique à **toutes les vacances scolaires** (Noël, Hiver, Printemps, Toussaint, Été). Le champ `reference_year` détermine automatiquement quelle partie des vacances chaque parent a selon la parité de l'année.
 
 ---
 
