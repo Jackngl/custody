@@ -178,8 +178,13 @@ class CustodyScheduleManager:
         windows.extend(self._manual_windows)
         windows.sort(key=lambda window: window.start)
 
+        # Filtrer les fenêtres qui se terminent dans le passé (avec une petite marge pour éviter les problèmes de timing)
+        # Ne garder que les fenêtres qui se terminent après maintenant
+        windows = [w for w in windows if w.end > now_local - timedelta(minutes=1)]
+
         current_window = next((window for window in windows if window.start <= now_local < window.end), None)
-        next_window = next((window for window in windows if window.start > now_local), None)
+        # next_window doit être une fenêtre qui commence dans le futur ET qui se termine dans le futur
+        next_window = next((window for window in windows if window.start > now_local and window.end > now_local), None)
 
         override_state = self._evaluate_override(now_local)
         is_present = override_state if override_state is not None else current_window is not None
