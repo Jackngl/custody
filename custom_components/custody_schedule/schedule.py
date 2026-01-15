@@ -180,14 +180,28 @@ class CustodyScheduleManager:
 
         # Filtrer STRICTEMENT les fenêtres qui se terminent dans le passé
         # Ne garder que les fenêtres qui se terminent APRÈS maintenant (pas égal, pas proche)
-        windows = [w for w in windows if w.end > now_local]
+        # Ajouter une marge de 1 minute pour éviter les problèmes de timing
+        windows = [w for w in windows if w.end > now_local + timedelta(minutes=1)]
 
-        current_window = next((window for window in windows if window.start <= now_local < window.end), None)
+        # current_window : fenêtre qui commence avant ou à maintenant et se termine après maintenant
+        # Mais exclure les fenêtres qui se terminent dans moins d'1 minute (considérées comme terminées)
+        current_window = next(
+            (window for window in windows 
+             if window.start <= now_local < window.end and window.end > now_local + timedelta(minutes=1)), 
+            None
+        )
         # next_window doit être une fenêtre qui commence dans le futur ET qui se termine dans le futur
         next_window = next((window for window in windows if window.start > now_local and window.end > now_local), None)
 
         override_state = self._evaluate_override(now_local)
         is_present = override_state if override_state is not None else current_window is not None
+
+        # DEBUG: Si current_window existe mais se termine très bientôt, forcer is_present à False
+        # pour éviter d'afficher une date de départ dans le passé ou très proche
+        if current_window and current_window.end <= now_local + timedelta(minutes=1):
+            # La fenêtre se termine dans moins d'1 minute, considérer que l'enfant n'est plus en garde
+            is_present = False if override_state is None else is_present
+            current_window = None
 
         next_arrival = None
         next_departure = None
@@ -196,14 +210,21 @@ class CustodyScheduleManager:
             if current_window:
                 # On est dans une vraie fenêtre de garde
                 next_departure = current_window.end
-                # S'assurer que next_departure est dans le futur
-                if next_departure and next_departure > now_local:
+                # S'assurer que next_departure est dans le futur (avec une marge de 1 minute)
+                if next_departure and next_departure > now_local + timedelta(minutes=1):
                     # Chercher la fenêtre qui commence après next_departure
                     next_arrival = next((w.start for w in windows if w.start > next_departure), None)
                 else:
-                    # Si la fin est dans le passé ou égale à maintenant, utiliser la prochaine fenêtre
+                    # Si la fin est dans le passé ou très proche, utiliser la prochaine fenêtre
                     next_departure = next_window.end if next_window else None
                     next_arrival = next_window.start if next_window else None
+                    # Si on n'a pas de next_window, chercher la prochaine fenêtre future
+                    if not next_departure:
+                        next_departure = next((w.end for w in windows if w.end > now_local + timedelta(minutes=1)), None)
+                        if next_departure:
+                            matching_window = next((w for w in windows if w.end == next_departure), None)
+                            if matching_window:
+                                next_arrival = matching_window.start
             elif override_state is True and self._presence_override and self._presence_override.get("until"):
                 # Override avec une date de fin spécifiée
                 next_departure = self._presence_override["until"]
