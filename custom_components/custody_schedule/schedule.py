@@ -195,11 +195,22 @@ class CustodyScheduleManager:
                 next_departure = now_local
             next_arrival = next_window.start if next_window else None
         else:
+            # Quand l'enfant n'est pas présent, next_arrival est la prochaine fenêtre de garde
+            # et next_departure est la fin de cette même prochaine fenêtre
             next_arrival = (
                 current_window.end
                 if current_window and current_window.end > now_local
                 else (next_window.start if next_window else None)
             )
+            # next_departure est la fin de la fenêtre qui commence à next_arrival
+            if next_arrival:
+                # Trouver la fenêtre qui commence à next_arrival
+                arrival_window = next((w for w in windows if w.start == next_arrival), None)
+                if arrival_window:
+                    next_departure = arrival_window.end
+                elif next_window:
+                    # Si on utilise next_window, sa fin est le prochain départ
+                    next_departure = next_window.end
 
         days_remaining = None
         target_dt = next_departure if is_present else next_arrival
