@@ -20,7 +20,8 @@ L'intégration **Planning de garde** crée automatiquement plusieurs entités po
 
 - **1 Binary Sensor** : Statut de présence
 - **1 Calendar** : Calendrier complet
-- **6 Sensors** : Informations détaillées sur la garde et les vacances
+- **1 Device Tracker** : Suivi de présence (utilisable dans l'entité Personne)
+- **7 Sensors** : Informations détaillées sur la garde et les vacances
 
 Toutes les entités sont préfixées par le nom de l'enfant pour faciliter l'identification.
 
@@ -102,7 +103,7 @@ Date et heure de la prochaine arrivée de l'enfant (garde classique ou vacances)
 
 ---
 
-### 4. Sensor : Prochain départ (garde)
+### 5. Sensor : Prochain départ (garde)
 
 **Nom de l'entité** : `sensor.{enfant}_next_departure`  
 **Nom affiché** : `{Enfant} Prochain départ (garde)`
@@ -120,7 +121,7 @@ Date et heure du prochain départ de l'enfant (garde classique ou vacances).
 
 ---
 
-### 5. Sensor : Jours restants (garde)
+### 6. Sensor : Jours restants (garde)
 
 **Nom de l'entité** : `sensor.{enfant}_days_remaining`  
 **Nom affiché** : `{Enfant} Jours restants (garde)`
@@ -139,7 +140,7 @@ Nombre de jours restants avant le prochain changement de garde.
 
 ---
 
-### 6. Sensor : Période actuelle
+### 7. Sensor : Période actuelle
 
 **Nom de l'entité** : `sensor.{enfant}_current_period`  
 **Nom affiché** : `{Enfant} Période actuelle`
@@ -158,7 +159,7 @@ Période actuelle (garde classique, vacances scolaires, ou aucune).
 
 ---
 
-### 7. Sensor : Prochaines vacances scolaires
+### 8. Sensor : Prochaines vacances scolaires
 
 **Nom de l'entité** : `sensor.{enfant}_next_vacation_name`  
 **Nom affiché** : `{Enfant} Prochaines vacances scolaires`
@@ -180,7 +181,25 @@ Nom des prochaines vacances scolaires à venir.
 
 ---
 
-### 8. Sensor : Jours jusqu'aux vacances scolaires
+### 9. Sensor : Date des prochaines vacances
+
+**Nom de l'entité** : `sensor.{enfant}_next_vacation_start`  
+**Nom affiché** : `{Enfant} Date des prochaines vacances`
+
+#### Description
+Date et heure de début des prochaines vacances scolaires au format lisible en français.
+
+#### Format
+- **État** : Date/heure au format lisible (ex: `27 janvier 2026 à 16:15`)
+- **Unité** : Aucune
+
+#### Utilisation
+- **Dashboard** : Afficher la date de début des prochaines vacances de manière lisible
+- **Automation** : Planifier des actions avant le début des vacances
+
+---
+
+### 10. Sensor : Jours jusqu'aux vacances scolaires
 
 **Nom de l'entité** : `sensor.{enfant}_days_until_vacation`  
 **Nom affiché** : `{Enfant} Jours jusqu'aux vacances scolaires`
