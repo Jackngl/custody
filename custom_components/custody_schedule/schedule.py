@@ -334,6 +334,7 @@ class CustodyScheduleManager:
         
         # 6. Merge in priority order: vacation windows (highest), then custom, then filtered pattern
         merged = vacation_display_windows + custom_windows + filtered_pattern_windows
+        # Filtrer les fenêtres qui se terminent dans le passé (avec marge d'1 jour pour éviter les problèmes de timing)
         return [window for window in merged if window.end > now - timedelta(days=1)]
     
     def _filter_windows_by_vacations(
