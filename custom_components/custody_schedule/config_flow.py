@@ -17,6 +17,7 @@ from .const import (
     CONF_ARRIVAL_TIME,
     CONF_AUGUST_RULE,
     CONF_CALENDAR_SYNC,
+    CONF_CALENDAR_TARGET,
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
     CONF_CUSTODY_TYPE,
@@ -422,6 +423,12 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Advanced optional settings (step 4)."""
         if user_input:
             cleaned = dict(user_input)
+            errors: dict[str, str] = {}
+            calendar_sync = cleaned.get(CONF_CALENDAR_SYNC, False)
+            calendar_target = cleaned.get(CONF_CALENDAR_TARGET, "") or ""
+            if calendar_sync and not str(calendar_target).strip():
+                errors[CONF_CALENDAR_TARGET] = "calendar_target_required"
+
             # Validate API URL if provided
             api_url = cleaned.get(CONF_HOLIDAY_API_URL)
             if api_url and api_url.strip():
@@ -432,11 +439,18 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_show_form(
                         step_id="advanced",
                         data_schema=self._get_advanced_schema(merged_data),
-                        errors={CONF_HOLIDAY_API_URL: "api_url_missing_placeholders"},
+                        errors={**errors, CONF_HOLIDAY_API_URL: "api_url_missing_placeholders"},
                     )
                 cleaned[CONF_HOLIDAY_API_URL] = api_url.strip()
             else:
                 cleaned.pop(CONF_HOLIDAY_API_URL, None)
+            if errors:
+                merged_data = {**self._data, **cleaned}
+                return self.async_show_form(
+                    step_id="advanced",
+                    data_schema=self._get_advanced_schema(merged_data),
+                    errors=errors,
+                )
             self._data.update(cleaned)
             title = self._data.get(CONF_CHILD_NAME_DISPLAY, self._data[CONF_CHILD_NAME])
             return self.async_create_entry(title=title, data=self._data)
@@ -452,6 +466,12 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_NOTES, default=data.get(CONF_NOTES, "")): cv.string,
                 vol.Optional(CONF_NOTIFICATIONS, default=data.get(CONF_NOTIFICATIONS, False)): cv.boolean,
                 vol.Optional(CONF_CALENDAR_SYNC, default=data.get(CONF_CALENDAR_SYNC, False)): cv.boolean,
+                vol.Optional(
+                    CONF_CALENDAR_TARGET,
+                    default=data.get(CONF_CALENDAR_TARGET, ""),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="calendar")
+                ),
                 vol.Optional(CONF_EXCEPTIONS, default=data.get(CONF_EXCEPTIONS, "")): cv.string,
                 vol.Optional(
                     CONF_HOLIDAY_API_URL,
@@ -617,6 +637,12 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         """Advanced optional settings."""
         if user_input:
             cleaned = dict(user_input)
+            errors: dict[str, str] = {}
+            calendar_sync = cleaned.get(CONF_CALENDAR_SYNC, False)
+            calendar_target = cleaned.get(CONF_CALENDAR_TARGET, "") or ""
+            if calendar_sync and not str(calendar_target).strip():
+                errors[CONF_CALENDAR_TARGET] = "calendar_target_required"
+
             # Validate API URL if provided
             api_url = cleaned.get(CONF_HOLIDAY_API_URL)
             if api_url and api_url.strip():
@@ -628,11 +654,19 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                     return self.async_show_form(
                         step_id="advanced",
                         data_schema=self._get_advanced_schema(merged_data),
-                        errors={CONF_HOLIDAY_API_URL: "api_url_missing_placeholders"},
+                        errors={**errors, CONF_HOLIDAY_API_URL: "api_url_missing_placeholders"},
                     )
                 cleaned[CONF_HOLIDAY_API_URL] = api_url.strip()
             else:
                 cleaned.pop(CONF_HOLIDAY_API_URL, None)
+            if errors:
+                data = {**self._entry.data, **(self._entry.options or {})}
+                merged_data = {**data, **cleaned}
+                return self.async_show_form(
+                    step_id="advanced",
+                    data_schema=self._get_advanced_schema(merged_data),
+                    errors=errors,
+                )
             self._data.update(cleaned)
             return self.async_create_entry(title="", data=self._data)
 
@@ -648,6 +682,12 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(CONF_NOTES, default=data.get(CONF_NOTES, "")): cv.string,
                 vol.Optional(CONF_NOTIFICATIONS, default=data.get(CONF_NOTIFICATIONS, False)): cv.boolean,
                 vol.Optional(CONF_CALENDAR_SYNC, default=data.get(CONF_CALENDAR_SYNC, False)): cv.boolean,
+                vol.Optional(
+                    CONF_CALENDAR_TARGET,
+                    default=data.get(CONF_CALENDAR_TARGET, ""),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="calendar")
+                ),
                 vol.Optional(CONF_EXCEPTIONS, default=data.get(CONF_EXCEPTIONS, "")): cv.string,
                 vol.Optional(
                     CONF_HOLIDAY_API_URL,

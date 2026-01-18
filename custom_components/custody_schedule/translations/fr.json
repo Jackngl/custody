@@ -42,7 +42,8 @@
         "data": {
           "notes": "Notes",
           "notifications": "Activer les notifications",
-          "calendar_sync": "Activer la synchro Google Calendar (placeholder)",
+          "calendar_sync": "Activer la synchro Google Calendar",
+          "calendar_target": "Calendrier cible (Google Calendar)",
           "exceptions": "Exceptions personnalisées"
         }
       }
@@ -51,7 +52,8 @@
   "error": {
     "invalid_local_photo": "Utilisez une URL, une source média ou placez l'image dans /config/www pour qu'elle soit accessible via /local/...",
     "invalid_child_name": "Saisissez au moins une lettre ou un chiffre (les accents sont supprimés automatiquement).",
-    "invalid_icon": "Choisissez une icône mdi:*."
+    "invalid_icon": "Choisissez une icône mdi:*.",
+    "calendar_target_required": "Sélectionnez un calendrier cible pour la synchronisation."
   },
   "options": {
     "step": {
@@ -96,7 +98,8 @@
         "data": {
           "notes": "Notes",
           "notifications": "Activer les notifications",
-          "calendar_sync": "Activer la synchro Google Calendar (placeholder)",
+          "calendar_sync": "Activer la synchro Google Calendar",
+          "calendar_target": "Calendrier cible (Google Calendar)",
           "exceptions": "Exceptions personnalisées"
         }
       }

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, datetime, timedelta
+import asyncio
 from typing import Any
 
 import voluptuous as vol
@@ -18,7 +19,10 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
+    CONF_CALENDAR_SYNC,
+    CONF_CALENDAR_TARGET,
     CONF_HOLIDAY_API_URL,
+    CONF_LOCATION,
     CONF_REFERENCE_YEAR,
     CONF_REFERENCE_YEAR_CUSTODY,
     CONF_REFERENCE_YEAR_VACATIONS,
@@ -100,6 +104,8 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
         self.manager = manager
         self.entry = entry
         self._last_state: CustodyComputation | None = None
+        self._calendar_sync_lock = asyncio.Lock()
+        self._last_calendar_sync: datetime | None = None
 
     async def _async_update_data(self) -> CustodyComputation:
         """Fetch data from the schedule manager."""
@@ -109,6 +115,7 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
             raise UpdateFailed(f"Unable to compute custody schedule: {err}") from err
 
         self._fire_events(state)
+        await self._maybe_sync_calendar(state)
         self._last_state = state
         return state
 
@@ -147,6 +154,126 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
                     "holiday": last.vacation_name,
                 },
             )
+
+    async def _maybe_sync_calendar(self, state: CustodyComputation) -> None:
+        """Sync custody windows to an external calendar if enabled."""
+        config = {**self.entry.data, **(self.entry.options or {})}
+        if not config.get(CONF_CALENDAR_SYNC):
+            return
+        target = config.get(CONF_CALENDAR_TARGET)
+        if not target:
+            return
+
+        now = dt_util.now()
+        if self._last_calendar_sync and now - self._last_calendar_sync < timedelta(hours=1):
+            return
+
+        async with self._calendar_sync_lock:
+            now = dt_util.now()
+            if self._last_calendar_sync and now - self._last_calendar_sync < timedelta(hours=1):
+                return
+            self._last_calendar_sync = now
+            try:
+                await _sync_calendar_events(self.hass, target, state, config)
+            except Exception as err:
+                LOGGER.warning("Calendar sync failed for %s: %s", target, err)
+
+
+def _event_key(summary: str, start: str, end: str) -> tuple[str, str, str]:
+    return summary, start, end
+
+
+def _normalize_event_datetime(value: Any) -> str | None:
+    if isinstance(value, dict):
+        value = value.get("dateTime") or value.get("date")
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, date):
+        return datetime.combine(value, datetime.min.time()).isoformat()
+    if isinstance(value, str):
+        parsed = dt_util.parse_datetime(value)
+        if parsed:
+            return parsed.isoformat()
+        try:
+            parsed_date = date.fromisoformat(value)
+        except ValueError:
+            return None
+        return datetime.combine(parsed_date, datetime.min.time()).isoformat()
+    return None
+
+
+async def _sync_calendar_events(
+    hass: HomeAssistant,
+    target: str,
+    state: CustodyComputation,
+    config: dict[str, Any],
+) -> None:
+    """Create missing custody events in the target calendar."""
+    if not hass.services.has_service("calendar", "get_events") or not hass.services.has_service(
+        "calendar", "create_event"
+    ):
+        LOGGER.debug("Calendar services not available, skipping sync.")
+        return
+
+    now = dt_util.now()
+    start_range = now - timedelta(days=1)
+    end_range = now + timedelta(days=120)
+
+    response = await hass.services.async_call(
+        "calendar",
+        "get_events",
+        {
+            "entity_id": target,
+            "start_date_time": start_range.isoformat(),
+            "end_date_time": end_range.isoformat(),
+        },
+        blocking=True,
+        return_response=True,
+    )
+
+    events = []
+    if isinstance(response, dict):
+        if "events" in response:
+            events = response.get("events") or []
+        elif target in response:
+            events = response.get(target) or []
+
+    existing_keys: set[tuple[str, str, str]] = set()
+    for event in events:
+        summary = event.get("summary") or event.get("message") or ""
+        start_val = _normalize_event_datetime(event.get("start"))
+        end_val = _normalize_event_datetime(event.get("end"))
+        if not summary or not start_val or not end_val:
+            continue
+        existing_keys.add(_event_key(summary, start_val, end_val))
+
+    child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
+    location = config.get(CONF_LOCATION) or ""
+
+    for window in state.windows:
+        if window.source == "vacation_filter":
+            continue
+        if window.end < start_range or window.start > end_range:
+            continue
+        summary = f"{child_label} - {window.label}".strip()
+        start_val = window.start.isoformat()
+        end_val = window.end.isoformat()
+        key = _event_key(summary, start_val, end_val)
+        if key in existing_keys:
+            continue
+        await hass.services.async_call(
+            "calendar",
+            "create_event",
+            {
+                "entity_id": target,
+                "summary": summary,
+                "start_date_time": start_val,
+                "end_date_time": end_val,
+                "description": f"Planning de garde ({window.source})",
+                "location": location,
+            },
+            blocking=True,
+        )
 
 
 def _migrate_reference_years(

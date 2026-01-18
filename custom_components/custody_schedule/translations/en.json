@@ -42,7 +42,8 @@
         "data": {
           "notes": "Notes",
           "notifications": "Enable notifications",
-          "calendar_sync": "Enable Google Calendar sync (placeholder)",
+          "calendar_sync": "Enable Google Calendar sync",
+          "calendar_target": "Target calendar (Google Calendar)",
           "exceptions": "Custom exceptions"
         }
       }
@@ -51,7 +52,8 @@
   "error": {
     "invalid_local_photo": "Use a URL, media source, or place the file under /config/www so it is available as /local/...",
     "invalid_child_name": "Enter at least one letter or digit (accents will be stripped automatically).",
-    "invalid_icon": "Select an mdi:* icon."
+    "invalid_icon": "Select an mdi:* icon.",
+    "calendar_target_required": "Select a target calendar for synchronization."
   },
   "options": {
     "step": {
@@ -96,7 +98,8 @@
         "data": {
           "notes": "Notes",
           "notifications": "Enable notifications",
-          "calendar_sync": "Enable Google Calendar sync (placeholder)",
+          "calendar_sync": "Enable Google Calendar sync",
+          "calendar_target": "Target calendar (Google Calendar)",
           "exceptions": "Custom exceptions"
         }
       }
