@@ -44,6 +44,7 @@
           "notifications": "Activer les notifications",
           "calendar_sync": "Activer la synchro Google Calendar",
           "calendar_target": "Calendrier cible (Google Calendar)",
+          "calendar_sync_days": "Fenêtre de synchro (jours)",
           "exceptions": "Exceptions personnalisées"
         }
       }
@@ -101,6 +102,7 @@
           "notifications": "Activer les notifications",
           "calendar_sync": "Activer la synchro Google Calendar",
           "calendar_target": "Calendrier cible (Google Calendar)",
+          "calendar_sync_days": "Fenêtre de synchro (jours)",
           "exceptions": "Exceptions personnalisées"
         }
       }

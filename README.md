@@ -99,7 +99,8 @@ La configuration se fait entièrement via l'interface utilisateur :
 4. **Options avancées** :
    - Notes
    - Notifications
-   - Synchronisation calendrier
+   - Synchronisation calendrier (Google Calendar)
+   - Calendrier cible + fenêtre de synchro
    - Exceptions
    - **URL d'API personnalisée** (optionnel)
 
@@ -112,6 +113,17 @@ Si vous souhaitez utiliser une API alternative pour les vacances scolaires :
 3. Entrer votre URL personnalisée dans le champ **URL API vacances scolaires**
    - L'URL doit contenir les placeholders `{year}` et `{zone}`
    - Exemple : `https://api.example.com/holidays?year={year}&zone={zone}`
+
+### Synchronisation Google Calendar
+
+Si vous activez la synchronisation, l'intégration crée et supprime automatiquement les événements de garde
+sur un calendrier Home Assistant (`calendar.*`) — y compris ceux fournis par l'intégration Google Calendar officielle.
+
+1. Aller dans **Paramètres** → **Appareils & services** → **Planning de garde** → **Options**
+2. Sélectionner **Options avancées**
+3. Activer **Synchronisation Google Calendar**
+4. Choisir le **Calendrier cible**
+5. Définir la **fenêtre de synchro (jours)** (par défaut 120)
 
 ## 🔧 Services disponibles
 

@@ -44,6 +44,7 @@
           "notifications": "Enable notifications",
           "calendar_sync": "Enable Google Calendar sync",
           "calendar_target": "Target calendar (Google Calendar)",
+          "calendar_sync_days": "Sync window (days)",
           "exceptions": "Custom exceptions"
         }
       }
@@ -100,6 +101,7 @@
           "notifications": "Enable notifications",
           "calendar_sync": "Enable Google Calendar sync",
           "calendar_target": "Target calendar (Google Calendar)",
+          "calendar_sync_days": "Sync window (days)",
           "exceptions": "Custom exceptions"
         }
       }

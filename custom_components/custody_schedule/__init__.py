@@ -20,6 +20,7 @@ from .const import (
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
     CONF_CALENDAR_SYNC,
+    CONF_CALENDAR_SYNC_DAYS,
     CONF_CALENDAR_TARGET,
     CONF_HOLIDAY_API_URL,
     CONF_LOCATION,
@@ -174,7 +175,7 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
                 return
             self._last_calendar_sync = now
             try:
-                await _sync_calendar_events(self.hass, target, state, config)
+                await _sync_calendar_events(self.hass, target, state, config, self.entry.entry_id)
             except Exception as err:
                 LOGGER.warning("Calendar sync failed for %s: %s", target, err)
 
@@ -202,13 +203,26 @@ def _normalize_event_datetime(value: Any) -> str | None:
     return None
 
 
+def _calendar_marker(entry_id: str) -> str:
+    return f"custody_schedule:{entry_id}"
+
+
+def _matches_marker(event: dict[str, Any], marker: str) -> bool:
+    description = event.get("description") or ""
+    if marker and marker in description:
+        return True
+    # Backward compatibility for events created before marker was added
+    return "Planning de garde" in description
+
+
 async def _sync_calendar_events(
     hass: HomeAssistant,
     target: str,
     state: CustodyComputation,
     config: dict[str, Any],
+    entry_id: str,
 ) -> None:
-    """Create missing custody events in the target calendar."""
+    """Create, update, and delete custody events in the target calendar."""
     if not hass.services.has_service("calendar", "get_events") or not hass.services.has_service(
         "calendar", "create_event"
     ):
@@ -216,8 +230,14 @@ async def _sync_calendar_events(
         return
 
     now = dt_util.now()
+    days = config.get(CONF_CALENDAR_SYNC_DAYS, 120)
+    try:
+        days = int(days)
+    except (TypeError, ValueError):
+        days = 120
+    days = max(7, min(365, days))
     start_range = now - timedelta(days=1)
-    end_range = now + timedelta(days=120)
+    end_range = now + timedelta(days=days)
 
     response = await hass.services.async_call(
         "calendar",
@@ -238,18 +258,26 @@ async def _sync_calendar_events(
         elif target in response:
             events = response.get(target) or []
 
+    marker = _calendar_marker(entry_id)
+
     existing_keys: set[tuple[str, str, str]] = set()
+    existing_events: list[dict[str, Any]] = []
     for event in events:
+        if marker and not _matches_marker(event, marker):
+            continue
         summary = event.get("summary") or event.get("message") or ""
         start_val = _normalize_event_datetime(event.get("start"))
         end_val = _normalize_event_datetime(event.get("end"))
         if not summary or not start_val or not end_val:
             continue
         existing_keys.add(_event_key(summary, start_val, end_val))
+        event["__key"] = _event_key(summary, start_val, end_val)
+        existing_events.append(event)
 
     child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
     location = config.get(CONF_LOCATION) or ""
 
+    desired_keys: set[tuple[str, str, str]] = set()
     for window in state.windows:
         if window.source == "vacation_filter":
             continue
@@ -259,21 +287,37 @@ async def _sync_calendar_events(
         start_val = window.start.isoformat()
         end_val = window.end.isoformat()
         key = _event_key(summary, start_val, end_val)
-        if key in existing_keys:
-            continue
-        await hass.services.async_call(
-            "calendar",
-            "create_event",
-            {
-                "entity_id": target,
-                "summary": summary,
-                "start_date_time": start_val,
-                "end_date_time": end_val,
-                "description": f"Planning de garde ({window.source})",
-                "location": location,
-            },
-            blocking=True,
-        )
+        desired_keys.add(key)
+        if key not in existing_keys:
+            await hass.services.async_call(
+                "calendar",
+                "create_event",
+                {
+                    "entity_id": target,
+                    "summary": summary,
+                    "start_date_time": start_val,
+                    "end_date_time": end_val,
+                "description": f"{marker} Planning de garde ({window.source})",
+                    "location": location,
+                },
+                blocking=True,
+            )
+
+    # Delete events that no longer exist in the planning
+    if hass.services.has_service("calendar", "delete_event"):
+        for event in existing_events:
+            key = event.get("__key")
+            if key in desired_keys:
+                continue
+            event_id = event.get("uid") or event.get("id") or event.get("event_id")
+            if not event_id:
+                continue
+            await hass.services.async_call(
+                "calendar",
+                "delete_event",
+                {"entity_id": target, "event_id": event_id},
+                blocking=True,
+            )
 
 
 def _migrate_reference_years(
