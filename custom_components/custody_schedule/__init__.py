@@ -23,6 +23,7 @@ from .const import (
     CONF_CALENDAR_SYNC_INTERVAL_HOURS,
     CONF_CALENDAR_SYNC_DAYS,
     CONF_CALENDAR_TARGET,
+    CONF_EXCEPTIONS_LIST,
     CONF_HOLIDAY_API_URL,
     CONF_LOCATION,
     CONF_REFERENCE_YEAR,
@@ -70,6 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     holidays = holiday_clients[api_url]
     
     manager = CustodyScheduleManager(hass, config, holidays)
+    _apply_manual_exceptions(manager, config)
     coordinator = CustodyScheduleCoordinator(hass, manager, entry)
 
     await coordinator.async_config_entry_first_refresh()
@@ -91,6 +93,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
     return unload_ok
+
+
+def _apply_manual_exceptions(manager: CustodyScheduleManager, config: dict[str, Any]) -> None:
+    exceptions = config.get(CONF_EXCEPTIONS_LIST)
+    if isinstance(exceptions, list) and exceptions:
+        manager.set_manual_windows(exceptions)
 
 
 class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):

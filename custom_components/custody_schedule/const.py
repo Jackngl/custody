@@ -54,6 +54,7 @@ CONF_CALENDAR_TARGET = "calendar_target"
 CONF_CALENDAR_SYNC_DAYS = "calendar_sync_days"
 CONF_CALENDAR_SYNC_INTERVAL_HOURS = "calendar_sync_interval_hours"
 CONF_EXCEPTIONS = "exceptions"
+CONF_EXCEPTIONS_LIST = "exceptions_list"
 CONF_CUSTOM_RULES = "custom_rules"
 CONF_HOLIDAY_API_URL = "holiday_api_url"
 

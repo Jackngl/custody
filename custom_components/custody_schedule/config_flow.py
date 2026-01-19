@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+import uuid
 
 import voluptuous as vol
 
@@ -11,7 +13,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv, selector
-from homeassistant.util import slugify
+from homeassistant.util import dt as dt_util, slugify
 
 from .const import (
     CONF_ARRIVAL_TIME,
@@ -25,6 +27,7 @@ from .const import (
     CONF_CUSTODY_TYPE,
     CONF_DEPARTURE_TIME,
     CONF_EXCEPTIONS,
+    CONF_EXCEPTIONS_LIST,
     CONF_HOLIDAY_API_URL,
     CONF_ICON,
     CONF_JULY_RULE,
@@ -273,6 +276,30 @@ def _time_to_str(value: Any, default: str) -> str:
     return default
 
 
+def _normalize_datetime(value: Any) -> datetime | None:
+    """Normalize datetime values from selectors or stored strings."""
+    if isinstance(value, datetime):
+        return dt_util.as_local(value)
+    if isinstance(value, str):
+        parsed = dt_util.parse_datetime(value)
+        return dt_util.as_local(parsed) if parsed else None
+    return None
+
+
+def _get_exceptions(data: dict[str, Any]) -> list[dict[str, Any]]:
+    exceptions = data.get(CONF_EXCEPTIONS_LIST, [])
+    return list(exceptions) if isinstance(exceptions, list) else []
+
+
+def _format_exception_label(item: dict[str, Any]) -> str:
+    label = item.get("label") or "Exception"
+    start = _normalize_datetime(item.get("start"))
+    end = _normalize_datetime(item.get("end"))
+    if start and end:
+        return f"{label} — {start.strftime('%Y-%m-%d %H:%M')} → {end.strftime('%Y-%m-%d %H:%M')}"
+    return str(label)
+
+
 class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle the step-driven configuration."""
 
@@ -490,7 +517,6 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         min=1, max=24, mode=selector.NumberSelectorMode.BOX, step=1
                     )
                 ),
-                vol.Optional(CONF_EXCEPTIONS, default=data.get(CONF_EXCEPTIONS, "")): cv.string,
                 vol.Optional(
                     CONF_HOLIDAY_API_URL,
                     default=data.get(CONF_HOLIDAY_API_URL, ""),
@@ -541,6 +567,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         self._entry = entry
         # Initialize with existing data to preserve all options
         self._data: dict[str, Any] = {**entry.data, **(entry.options or {})}
+        self._selected_exception_id: str | None = None
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Show options menu."""
@@ -550,6 +577,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 "custody": "Garde classique",
                 "schedule": "Horaires et lieu",
                 "vacations": "Vacances scolaires",
+                "exceptions": "Exceptions",
                 "advanced": "Options avancées",
             },
         )
@@ -610,6 +638,144 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
             }
         )
         return self.async_show_form(step_id="schedule", data_schema=schema)
+
+    async def async_step_exceptions(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Manage manual exceptions (add/edit/remove)."""
+        return self.async_show_menu(
+            step_id="exceptions",
+            menu_options={
+                "exceptions_add": "Ajouter",
+                "exceptions_edit": "Modifier",
+                "exceptions_delete": "Supprimer",
+                "init": "Retour",
+            },
+        )
+
+    async def async_step_exceptions_add(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Add a new exception window."""
+        errors: dict[str, str] = {}
+        if user_input:
+            start = _normalize_datetime(user_input.get("start"))
+            end = _normalize_datetime(user_input.get("end"))
+            if not start or not end or end <= start:
+                errors["base"] = "end_before_start"
+            if not errors:
+                label = str(user_input.get("label") or "Exception").strip() or "Exception"
+                new_item = {
+                    "id": uuid.uuid4().hex,
+                    "label": label,
+                    "start": start.isoformat(),
+                    "end": end.isoformat(),
+                }
+                exceptions = _get_exceptions(self._data)
+                exceptions.append(new_item)
+                self._data[CONF_EXCEPTIONS_LIST] = exceptions
+                return self.async_create_entry(title="", data=self._data)
+
+        schema = vol.Schema(
+            {
+                vol.Optional("label"): cv.string,
+                vol.Required("start"): selector.DateTimeSelector(),
+                vol.Required("end"): selector.DateTimeSelector(),
+            }
+        )
+        return self.async_show_form(step_id="exceptions_add", data_schema=schema, errors=errors)
+
+    async def async_step_exceptions_edit(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Select an exception to edit."""
+        exceptions = _get_exceptions(self._data)
+        if not exceptions:
+            return self.async_show_form(
+                step_id="exceptions_edit",
+                data_schema=vol.Schema({}),
+                errors={"base": "no_exceptions"},
+            )
+
+        if user_input:
+            self._selected_exception_id = user_input.get("exception_id")
+            return await self.async_step_exceptions_edit_form()
+
+        schema = vol.Schema(
+            {
+                vol.Required("exception_id"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            {
+                                "value": item.get("id", ""),
+                                "label": _format_exception_label(item),
+                            }
+                            for item in exceptions
+                        ],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                )
+            }
+        )
+        return self.async_show_form(step_id="exceptions_edit", data_schema=schema)
+
+    async def async_step_exceptions_edit_form(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Edit the selected exception."""
+        errors: dict[str, str] = {}
+        exceptions = _get_exceptions(self._data)
+        selected = next((item for item in exceptions if item.get("id") == self._selected_exception_id), None)
+        if not selected:
+            return await self.async_step_exceptions_edit()
+
+        if user_input:
+            start = _normalize_datetime(user_input.get("start"))
+            end = _normalize_datetime(user_input.get("end"))
+            if not start or not end or end <= start:
+                errors["base"] = "end_before_start"
+            if not errors:
+                selected["label"] = str(user_input.get("label") or selected.get("label") or "Exception").strip()
+                selected["start"] = start.isoformat()
+                selected["end"] = end.isoformat()
+                self._data[CONF_EXCEPTIONS_LIST] = exceptions
+                return self.async_create_entry(title="", data=self._data)
+
+        schema = vol.Schema(
+            {
+                vol.Optional("label", default=selected.get("label", "")): cv.string,
+                vol.Required("start", default=_normalize_datetime(selected.get("start"))): selector.DateTimeSelector(),
+                vol.Required("end", default=_normalize_datetime(selected.get("end"))): selector.DateTimeSelector(),
+            }
+        )
+        return self.async_show_form(step_id="exceptions_edit_form", data_schema=schema, errors=errors)
+
+    async def async_step_exceptions_delete(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Delete an exception."""
+        exceptions = _get_exceptions(self._data)
+        if not exceptions:
+            return self.async_show_form(
+                step_id="exceptions_delete",
+                data_schema=vol.Schema({}),
+                errors={"base": "no_exceptions"},
+            )
+
+        if user_input:
+            exception_id = user_input.get("exception_id")
+            self._data[CONF_EXCEPTIONS_LIST] = [
+                item for item in exceptions if item.get("id") != exception_id
+            ]
+            return self.async_create_entry(title="", data=self._data)
+
+        schema = vol.Schema(
+            {
+                vol.Required("exception_id"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            {
+                                "value": item.get("id", ""),
+                                "label": _format_exception_label(item),
+                            }
+                            for item in exceptions
+                        ],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                )
+            }
+        )
+        return self.async_show_form(step_id="exceptions_delete", data_schema=schema)
 
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Modify vacances scolaires (school zone and vacation rules)."""
@@ -722,7 +888,6 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                         min=1, max=24, mode=selector.NumberSelectorMode.BOX, step=1
                     )
                 ),
-                vol.Optional(CONF_EXCEPTIONS, default=data.get(CONF_EXCEPTIONS, "")): cv.string,
                 vol.Optional(
                     CONF_HOLIDAY_API_URL,
                     default=data.get(CONF_HOLIDAY_API_URL, ""),

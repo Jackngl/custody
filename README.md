@@ -102,7 +102,7 @@ La configuration se fait entièrement via l'interface utilisateur :
    - Synchronisation calendrier (Google Calendar)
    - Calendrier cible + fenêtre de synchro
    - Intervalle de synchro
-   - Exceptions
+   - Exceptions (UI avancée)
    - **URL d'API personnalisée** (optionnel)
 
 ### Configuration de l'URL d'API
@@ -126,6 +126,14 @@ sur un calendrier Home Assistant (`calendar.*`) — y compris ceux fournis par l
 4. Choisir le **Calendrier cible**
 5. Définir la **fenêtre de synchro (jours)** (par défaut 120)
 6. Définir l'**intervalle de synchro (heures)** (par défaut 1)
+
+### Exceptions (UI avancée)
+
+Vous pouvez ajouter des exceptions (jours supplémentaires, garde en semaine, etc.) via l'UI :
+
+1. Aller dans **Paramètres** → **Appareils & services** → **Planning de garde** → **Options**
+2. Sélectionner **Exceptions**
+3. Ajouter / Modifier / Supprimer une exception (début + fin + titre)
 
 ## 🔧 Services disponibles
 
