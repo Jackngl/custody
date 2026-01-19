@@ -48,6 +48,38 @@
           "calendar_sync_interval_hours": "Sync interval (hours)",
           "exceptions": "Custom exceptions"
         }
+      },
+      "exceptions_add": {
+        "title": "Add exception",
+        "description": "Add an exceptional custody period.",
+        "data": {
+          "label": "Title",
+          "start": "Start",
+          "end": "End"
+        }
+      },
+      "exceptions_edit": {
+        "title": "Edit exception",
+        "description": "Select an exception to edit.",
+        "data": {
+          "exception_id": "Exception"
+        }
+      },
+      "exceptions_edit_form": {
+        "title": "Edit exception",
+        "description": "Update the selected period.",
+        "data": {
+          "label": "Title",
+          "start": "Start",
+          "end": "End"
+        }
+      },
+      "exceptions_delete": {
+        "title": "Delete exception",
+        "description": "Select an exception to delete.",
+        "data": {
+          "exception_id": "Exception"
+        }
       }
     }
   },
@@ -55,7 +87,9 @@
     "invalid_local_photo": "Use a URL, media source, or place the file under /config/www so it is available as /local/...",
     "invalid_child_name": "Enter at least one letter or digit (accents will be stripped automatically).",
     "invalid_icon": "Select an mdi:* icon.",
-    "calendar_target_required": "Select a target calendar for synchronization."
+    "calendar_target_required": "Select a target calendar for synchronization.",
+    "end_before_start": "End must be after start.",
+    "no_exceptions": "No exceptions available."
   },
   "options": {
     "step": {
