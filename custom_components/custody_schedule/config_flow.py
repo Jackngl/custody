@@ -300,6 +300,11 @@ def _normalize_date(value: Any) -> date | None:
     return None
 
 
+def _date_to_str(value: Any) -> str | None:
+    normalized = _normalize_date(value)
+    return normalized.isoformat() if normalized else None
+
+
 def _normalize_time(value: Any) -> time | None:
     if value is None:
         return None
@@ -861,8 +866,8 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                     "weekday": weekday,
                     "start_time": start_time.strftime("%H:%M"),
                     "end_time": end_time.strftime("%H:%M"),
-                    "start_date": user_input.get("start_date") or None,
-                    "end_date": user_input.get("end_date") or None,
+                    "start_date": _date_to_str(user_input.get("start_date")),
+                    "end_date": _date_to_str(user_input.get("end_date")),
                 }
                 exceptions = _get_recurring_exceptions(self._data)
                 exceptions.append(new_item)
@@ -953,8 +958,8 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 selected["weekday"] = weekday
                 selected["start_time"] = start_time.strftime("%H:%M")
                 selected["end_time"] = end_time.strftime("%H:%M")
-                selected["start_date"] = user_input.get("start_date") or None
-                selected["end_date"] = user_input.get("end_date") or None
+                selected["start_date"] = _date_to_str(user_input.get("start_date"))
+                selected["end_date"] = _date_to_str(user_input.get("end_date"))
                 self._data[CONF_EXCEPTIONS_RECURRING] = exceptions
                 return self.async_create_entry(title="", data=self._data)
 
