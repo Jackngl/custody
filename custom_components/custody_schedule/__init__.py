@@ -639,6 +639,8 @@ def _register_services(hass: HomeAssistant) -> None:
 
     async def _async_handle_purge_calendar(call: ServiceCall) -> None:
         entry_id = call.data["entry_id"]
+        include_unmarked = bool(call.data.get("include_unmarked", False))
+        purge_all = bool(call.data.get("purge_all", False))
         entry = _get_entry(entry_id)
         config = {**entry.data, **(entry.options or {})}
         target = _normalize_calendar_target(config.get(CONF_CALENDAR_TARGET))
@@ -648,12 +650,12 @@ def _register_services(hass: HomeAssistant) -> None:
             raise HomeAssistantError("calendar.get_events not available")
 
         now = dt_util.now()
-        days = config.get(CONF_CALENDAR_SYNC_DAYS, 120)
+        days = call.data.get("days", config.get(CONF_CALENDAR_SYNC_DAYS, 120))
         try:
             days = int(days)
         except (TypeError, ValueError):
             days = 120
-        days = max(7, min(365, days))
+        days = max(7, min(3650, days))
         start_range = _ensure_local_tz(now - timedelta(days=1))
         end_range = _ensure_local_tz(now + timedelta(days=days))
 
@@ -683,13 +685,20 @@ def _register_services(hass: HomeAssistant) -> None:
                     events = target_payload
 
         marker = _calendar_marker(entry_id)
+        child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
+        summary_prefix = f"{child_label} - " if child_label else ""
         deleted = 0
         if hass.services.has_service("calendar", "delete_event"):
             for event in events:
                 if not isinstance(event, dict):
                     continue
-                if marker and not _matches_marker(event, marker):
-                    continue
+                if not purge_all:
+                    matches = marker and _matches_marker(event, marker)
+                    if not matches and include_unmarked and summary_prefix:
+                        summary = event.get("summary") or event.get("message") or ""
+                        matches = summary.startswith(summary_prefix)
+                    if not matches:
+                        continue
                 event_id = event.get("uid") or event.get("id") or event.get("event_id")
                 if not event_id:
                     continue
@@ -701,13 +710,27 @@ def _register_services(hass: HomeAssistant) -> None:
                 )
                 deleted += 1
 
-        LOGGER.info("Purged %d custody events from %s", deleted, target)
+        LOGGER.info(
+            "Purged %d custody events from %s (purge_all=%s, include_unmarked=%s, days=%s)",
+            deleted,
+            target,
+            purge_all,
+            include_unmarked,
+            days,
+        )
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_PURGE_CALENDAR,
         _async_handle_purge_calendar,
-        schema=vol.Schema({vol.Required("entry_id"): cv.string}),
+        schema=vol.Schema(
+            {
+                vol.Required("entry_id"): cv.string,
+                vol.Optional("include_unmarked", default=False): cv.boolean,
+                vol.Optional("purge_all", default=False): cv.boolean,
+                vol.Optional("days"): cv.positive_int,
+            }
+        ),
     )
 
     async def _async_handle_test_api(call: ServiceCall) -> None:
