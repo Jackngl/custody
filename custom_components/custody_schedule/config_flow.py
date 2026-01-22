@@ -305,9 +305,30 @@ def _normalize_time(value: Any) -> time | None:
         return None
     if hasattr(value, "hour") and hasattr(value, "minute"):
         return value
+    if isinstance(value, dict):
+        if "time" in value and isinstance(value["time"], str):
+            return dt_util.parse_time(value["time"])
+        if "hour" in value and "minute" in value:
+            try:
+                second = int(value.get("second", 0))
+                return time(int(value["hour"]), int(value["minute"]), second)
+            except (TypeError, ValueError):
+                return None
     if isinstance(value, str):
         return dt_util.parse_time(value)
     return None
+
+
+def _normalize_weekday(value: Any) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        value = value.get("value")
+    try:
+        weekday = int(value)
+    except (TypeError, ValueError):
+        return None
+    return weekday if 0 <= weekday <= 6 else None
 
 
 def _get_exceptions(data: dict[str, Any]) -> list[dict[str, Any]]:
@@ -827,14 +848,17 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         if user_input:
             start_time = _normalize_time(user_input.get("start_time"))
             end_time = _normalize_time(user_input.get("end_time"))
+            weekday = _normalize_weekday(user_input.get("weekday"))
             if not start_time or not end_time or end_time <= start_time:
                 errors["base"] = "end_before_start"
+            if weekday is None:
+                errors["base"] = "invalid_weekday"
             if not errors:
                 label = str(user_input.get("label") or "Exception récurrente").strip() or "Exception récurrente"
                 new_item = {
                     "id": uuid.uuid4().hex,
                     "label": label,
-                    "weekday": int(user_input.get("weekday")),
+                    "weekday": weekday,
                     "start_time": start_time.strftime("%H:%M"),
                     "end_time": end_time.strftime("%H:%M"),
                     "start_date": user_input.get("start_date") or None,
@@ -919,11 +943,14 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         if user_input:
             start_time = _normalize_time(user_input.get("start_time"))
             end_time = _normalize_time(user_input.get("end_time"))
+            weekday = _normalize_weekday(user_input.get("weekday"))
             if not start_time or not end_time or end_time <= start_time:
                 errors["base"] = "end_before_start"
+            if weekday is None:
+                errors["base"] = "invalid_weekday"
             if not errors:
                 selected["label"] = str(user_input.get("label") or selected.get("label") or "Exception").strip()
-                selected["weekday"] = int(user_input.get("weekday"))
+                selected["weekday"] = weekday
                 selected["start_time"] = start_time.strftime("%H:%M")
                 selected["end_time"] = end_time.strftime("%H:%M")
                 selected["start_date"] = user_input.get("start_date") or None

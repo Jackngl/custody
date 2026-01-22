@@ -128,6 +128,7 @@
     "api_url_missing_placeholders": "L'URL de l'API doit contenir les placeholders {year} et {zone}.",
     "calendar_target_required": "Sélectionnez un calendrier cible pour la synchronisation.",
     "end_before_start": "La fin doit être après le début.",
+    "invalid_weekday": "Sélectionnez un jour de la semaine valide.",
     "no_exceptions": "Aucune exception disponible."
   },
   "options": {

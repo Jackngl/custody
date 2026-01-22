@@ -127,6 +127,7 @@
     "invalid_icon": "Select an mdi:* icon.",
     "calendar_target_required": "Select a target calendar for synchronization.",
     "end_before_start": "End must be after start.",
+    "invalid_weekday": "Select a valid weekday.",
     "no_exceptions": "No exceptions available."
   },
   "options": {
