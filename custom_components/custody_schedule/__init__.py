@@ -239,20 +239,18 @@ def _normalize_calendar_target(value: Any) -> str | None:
 
 
 def _normalize_event_datetime(value: Any) -> str | None:
-    try:
-        if isinstance(value, dict):
+    if isinstance(value, dict):
+        value = value.get("dateTime") or value.get("date")
+    elif isinstance(value, str):
+        # Keep raw string for parsing below.
+        pass
+    elif hasattr(value, "get"):
+        try:
             value = value.get("dateTime") or value.get("date")
-        elif isinstance(value, str):
-            # Keep raw string for parsing below.
-            pass
-        elif hasattr(value, "get"):
-            try:
-                value = value.get("dateTime") or value.get("date")
-            except Exception:
-                LOGGER.debug("Calendar event datetime get() failed: %s (%s)", value, type(value).__name__)
-                return None
-    except Exception:
-        LOGGER.debug("Calendar event datetime normalization failed: %s (%s)", value, type(value).__name__)
+        except Exception:
+            LOGGER.debug("Calendar event datetime get() failed: %s (%s)", value, type(value).__name__)
+            return None
+    else:
         return None
     if isinstance(value, datetime):
         return value.isoformat()
