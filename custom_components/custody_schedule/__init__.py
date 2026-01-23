@@ -14,6 +14,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv, entity_registry as er
+from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
+from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.components.calendar import CalendarEntityFeature, CalendarEvent
@@ -460,7 +462,7 @@ async def _delete_calendar_event_direct(
             if calendar_platform and hasattr(calendar_platform, "entities"):
                 entity = calendar_platform.entities.get(entity_id)
         
-        # Method 2: Try entity registry to find the entity
+        # Method 2: Try entity registry to find the entity (most reliable for Google Calendar)
         if not entity:
             registry = er.async_get(hass)
             entity_entry = registry.async_get(entity_id)
@@ -470,11 +472,19 @@ async def _delete_calendar_event_direct(
                 if isinstance(platform_data, dict):
                     calendar_platform = platform_data.get("calendar")
                     if calendar_platform and hasattr(calendar_platform, "entities"):
-                        # Try both entity_id and unique_id
+                        # First try by unique_id (most reliable for Google Calendar)
                         for eid, ent in calendar_platform.entities.items():
-                            if eid == entity_id or (hasattr(ent, "unique_id") and ent.unique_id == entity_entry.unique_id):
+                            if hasattr(ent, "unique_id") and ent.unique_id == entity_entry.unique_id:
                                 entity = ent
+                                LOGGER.debug("Found entity by unique_id: %s", entity_entry.unique_id)
                                 break
+                        # Fallback: try by entity_id
+                        if not entity:
+                            for eid, ent in calendar_platform.entities.items():
+                                if eid == entity_id:
+                                    entity = ent
+                                    LOGGER.debug("Found entity by entity_id: %s", entity_id)
+                                    break
         
         # Method 3: Try to find by domain
         if not entity:
@@ -489,22 +499,60 @@ async def _delete_calendar_event_direct(
                             break
 
         if not entity:
-            LOGGER.debug("Calendar entity %s not found in platform", entity_id)
+            LOGGER.warning("Calendar entity %s not found in platform", entity_id)
             return False
 
         if not hasattr(entity, "async_delete_event"):
-            LOGGER.debug("Entity %s does not have async_delete_event method", entity_id)
+            LOGGER.warning("Entity %s does not have async_delete_event method (type: %s)", 
+                          entity_id, type(entity).__name__)
             return False
 
+        # Check if entity supports DELETE_EVENT feature
         if hasattr(entity, "supported_features"):
             if not (entity.supported_features & CalendarEntityFeature.DELETE_EVENT):
-                LOGGER.debug("Entity %s does not support DELETE_EVENT feature", entity_id)
+                LOGGER.warning("Entity %s does not support DELETE_EVENT feature (supported: %s)", 
+                             entity_id, entity.supported_features)
                 return False
 
-        LOGGER.debug("Deleting event uid=%s recurrence_id=%s from %s", uid, recurrence_id, entity_id)
-        await entity.async_delete_event(uid, recurrence_id=recurrence_id)
-        LOGGER.info("Successfully deleted event uid=%s from %s", uid, entity_id)
-        return True
+        # Validate UID
+        if not uid or not isinstance(uid, str) or not uid.strip():
+            LOGGER.warning("Invalid UID for deletion: %s (type: %s)", uid, type(uid))
+            return False
+
+        LOGGER.debug("Deleting event uid=%s recurrence_id=%s from %s (entity type: %s)", 
+                    uid, recurrence_id, entity_id, type(entity).__name__)
+        
+        # Call async_delete_event - handle both with and without recurrence_id
+        # Google Calendar's async_delete_event signature: async_delete_event(uid: str, recurrence_id: str | None = None)
+        try:
+            if recurrence_id:
+                await entity.async_delete_event(uid, recurrence_id=recurrence_id)
+            else:
+                # Some implementations may require None explicitly, others may accept just uid
+                await entity.async_delete_event(uid)
+            LOGGER.info("Successfully deleted event uid=%s from %s", uid, entity_id)
+            return True
+        except TypeError as type_err:
+            # If TypeError, try with explicit None for recurrence_id
+            if "recurrence_id" in str(type_err).lower() or "positional" in str(type_err).lower():
+                LOGGER.debug("Retrying delete with explicit None for recurrence_id")
+                try:
+                    await entity.async_delete_event(uid, recurrence_id=None)
+                    LOGGER.info("Successfully deleted event uid=%s from %s (with explicit None)", uid, entity_id)
+                    return True
+                except Exception as retry_err:
+                    LOGGER.warning("Delete failed even with explicit None: %s", retry_err, exc_info=True)
+                    return False
+            else:
+                raise
+    except AttributeError as attr_err:
+        LOGGER.warning("Entity %s missing required attribute: %s", entity_id, attr_err, exc_info=True)
+        return False
+    except TypeError as type_err:
+        LOGGER.warning("Type error deleting event from %s (uid=%s, recurrence_id=%s): %s. Entity type: %s", 
+                      entity_id, uid, recurrence_id, type_err, 
+                      type(entity).__name__ if 'entity' in locals() else 'unknown', exc_info=True)
+        return False
     except Exception as err:
         LOGGER.warning("Direct entity delete failed for %s (uid=%s): %s", entity_id, uid, err, exc_info=True)
         return False
@@ -650,9 +698,12 @@ async def _sync_calendar_events(
             continue
         if delete_service:
             try:
-                service_data = {"entity_id": target, "uid": uid}
-                if recurrence_id:
-                    service_data["recurrence_id"] = recurrence_id
+                # Build service data - Google Calendar expects uid and optionally recurrence_id
+                service_data = {"entity_id": target, "uid": str(uid).strip()}
+                if recurrence_id and str(recurrence_id).strip():
+                    service_data["recurrence_id"] = str(recurrence_id).strip()
+                
+                LOGGER.debug("Calling calendar.%s service in sync with data: %s", delete_service, service_data)
                 await hass.services.async_call(
                     "calendar",
                     delete_service,
@@ -660,8 +711,10 @@ async def _sync_calendar_events(
                     blocking=True,
                 )
                 deleted += 1
+                LOGGER.debug("Service delete succeeded in sync for uid=%s", uid)
             except Exception as err:
-                LOGGER.debug("Service delete failed in sync, trying direct entity: %s", err)
+                LOGGER.warning("Service delete failed in sync for uid=%s: %s, trying direct entity access", 
+                             uid, err, exc_info=True)
                 if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
                     deleted += 1
         else:
@@ -869,9 +922,12 @@ async def _async_purge_calendar_events(
                 )
             if delete_service:
                 try:
-                    service_data = {"entity_id": target, "uid": uid}
-                    if recurrence_id:
-                        service_data["recurrence_id"] = recurrence_id
+                    # Build service data - Google Calendar expects uid and optionally recurrence_id
+                    service_data = {"entity_id": target, "uid": str(uid).strip()}
+                    if recurrence_id and str(recurrence_id).strip():
+                        service_data["recurrence_id"] = str(recurrence_id).strip()
+                    
+                    LOGGER.debug("Calling calendar.%s service with data: %s", delete_service, service_data)
                     await hass.services.async_call(
                         "calendar",
                         delete_service,
@@ -879,8 +935,10 @@ async def _async_purge_calendar_events(
                         blocking=True,
                     )
                     deleted += 1
+                    LOGGER.debug("Service delete succeeded for uid=%s", uid)
                 except Exception as err:
-                    LOGGER.debug("Service delete failed, trying direct entity: %s", err)
+                    LOGGER.warning("Service delete failed for uid=%s: %s, trying direct entity access", 
+                                 uid, err, exc_info=True)
                     if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
                         deleted += 1
             else:
