@@ -1,9 +1,9 @@
 # 👨‍👩‍👧‍👦 Planning de garde (Custody Schedule)
 
 <<<<<<< HEAD
-![Version](https://img.shields.io/badge/version-1.2.31-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.33-blue.svg)
 =======
-![Version](https://img.shields.io/badge/version-1.2.32-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.33-blue.svg)
 >>>>>>> bfdc133 (feat: add purge debug diagnostics)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
