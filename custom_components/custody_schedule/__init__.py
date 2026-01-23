@@ -761,6 +761,7 @@ def _register_services(hass: HomeAssistant) -> None:
                 vol.Optional("include_unmarked", default=False): cv.boolean,
                 vol.Optional("purge_all", default=False): cv.boolean,
                 vol.Optional("days"): cv.positive_int,
+                vol.Optional("match_text"): cv.string,
             }
         ),
     )
