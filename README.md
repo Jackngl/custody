@@ -25,7 +25,7 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
 
 ## ✨ Fonctionnalités principales
 
-- ✅ **Configuration simplifiée** : flow guidé avec labels clairs (enfant ➜ garde ➜ vacances ➜ options)
+- ✅ **Configuration simplifiée** : parcours guidé avec labels clairs (enfant ➜ garde ➜ vacances ➜ options)
 - ✅ **Calcul intelligent** : alternance automatique des vacances chaque année.
 - ✅ **Calcul automatique** des périodes selon plusieurs rythmes :
   - Semaine alternée (1/1)
@@ -183,7 +183,7 @@ Ajoute des périodes ponctuelles de présence (vacances, échanges spécifiques)
 
 **Exemple :**
 ```yaml
-service: custody_schedule.set_manual_dates
+action: custody_schedule.set_manual_dates
 data:
   entry_id: "1234567890abcdef1234567890abcdef"
   dates:
@@ -203,7 +203,7 @@ Force l'état présent/absent pour une durée donnée.
 
 **Exemple :**
 ```yaml
-service: custody_schedule.override_presence
+action: custody_schedule.override_presence
 data:
   entry_id: "1234567890abcdef1234567890abcdef"
   state: "on"
@@ -219,7 +219,7 @@ Déclenche immédiatement un recalcul du planning.
 
 **Exemple :**
 ```yaml
-service: custody_schedule.refresh_schedule
+action: custody_schedule.refresh_schedule
 data:
   entry_id: "1234567890abcdef1234567890abcdef"
 ```
@@ -235,7 +235,7 @@ Teste la connexion à l'API des vacances scolaires et affiche les résultats dan
 
 **Exemple :**
 ```yaml
-service: custody_schedule.test_holiday_api
+action: custody_schedule.test_holiday_api
 data:
   entry_id: "1234567890abcdef1234567890abcdef"
   zone: "C"
@@ -254,7 +254,7 @@ Exporte les exceptions (ponctuelles + récurrentes) vers un fichier JSON dans `/
 
 **Exemple :**
 ```yaml
-service: custody_schedule.export_exceptions
+action: custody_schedule.export_exceptions
 data:
   entry_id: "1234567890abcdef1234567890abcdef"
   filename: "custody_exceptions.json"
@@ -272,7 +272,7 @@ Importe des exceptions depuis un fichier JSON ou un payload direct.
 
 **Exemple :**
 ```yaml
-service: custody_schedule.import_exceptions
+action: custody_schedule.import_exceptions
 data:
   entry_id: "1234567890abcdef1234567890abcdef"
   filename: "custody_exceptions.json"
@@ -596,8 +596,6 @@ Les résultats sont disponibles dans les logs Home Assistant (Paramètres → Sy
 - [x] URL API personnalisable
 - [x] Service de test API
 
-
-
 ### v1.1 ✅
 - [x] Calendrier avancé avec vue mensuelle
 - [x] Synchronisation Google Calendar
@@ -646,6 +644,12 @@ cd custody-v1
 # Installer dans Home Assistant
 cp -r custom_components/custody_schedule /config/custom_components/
 ```
+
+### Workflow de versioning (CI/CD)
+
+Le projet utilise un workflow automatisé pour la création des tags et des releases.
+- Toute fusion (merge) sur `main` incrémente automatiquement la version (patch).
+- **Important** : Si vous effectuez un changement de version manuel ou une correction documentaire qui ne nécessite pas de nouvelle release, ajoutez **`[skip version]`** dans votre message de commit pour désactiver l'auto-incrémentation.
 
 ### Tests
 
