@@ -1,6 +1,6 @@
 # 👨‍👩‍👧‍👦 Planning de garde (Custody Schedule)
 
-![Version](https://img.shields.io/badge/version-1.2.51-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
@@ -13,6 +13,8 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
   - [Installation via HACS (recommandé)](#installation-via-hacs-recommandé)
   - [Installation manuelle](#installation-manuelle)
 - [Configuration](#configuration)
+  - [Synchronisation Google Calendar](#synchronisation-google-calendar)
+- [Diagnostic et Nettoyage (Purge)](#diagnostic-et-nettoyage-purge)
 - [Services disponibles](#services-disponibles)
 - [Événements Home Assistant](#événements-home-assistant)
 - [Entités générées](#entités-générées)
@@ -142,6 +144,32 @@ Dans le même écran **Exceptions**, vous pouvez aussi gérer des exceptions ré
 
 Les exceptions (ponctuelles et récurrentes) apparaissent dans le calendrier de l'intégration.
 
+## 🛠 Diagnostic et Nettoyage (Purge)
+
+Si vous constatez des doublons ou des événements qui ne se suppriment pas correctement de votre Google Calendar, l'intégration propose un service de purge robuste.
+
+Depuis la version 1.3.0, la purge utilise une méthode d'accès direct aux entités Home Assistant, ce qui permet de récupérer les identifiants réels (UID) souvent masqués par l'API standard.
+
+### Comment lancer une purge manuelle
+
+1. Allez dans **Outils de développement** -> **Actions** (ou Services).
+2. Sélectionnez l'action `Planning de garde: Purger le calendrier`.
+3. Passez en **mode YAML** et utilisez le modèle suivant :
+
+```yaml
+action: custody_schedule.purge_calendar
+data:
+  entry_id: "VOTRE_ENTRY_ID"
+  days: 120
+  debug: true
+```
+
+> [!TIP]
+> Pour trouver votre `entry_id`, allez dans les **Paramètres** de l'intégration ou utilisez ce modèle dans l'outil Modèles de HA : 
+> `{{ config_entry_id('binary_sensor.NOM_ENFANT_presence') }}`
+
+---
+
 ## 🔧 Services disponibles
 
 ### `custody_schedule.set_manual_dates`
@@ -251,21 +279,20 @@ data:
 
 ### `custody_schedule.purge_calendar`
 
-Supprime manuellement les événements du calendrier. Utile pour nettoyer les anciens événements ou forcer une resynchronisation complète.
+Supprime manuellement les événements du calendrier. Cette méthode est capable d'identifier les événements créés par Custody même lorsqu'ils sont orphelins ou dupliqués grâce à une lecture directe des index du calendrier.
 
 **Paramètres :**
-- `entry_id` (requis) : ID de l'intégration
-- `include_unmarked` (optionnel) : Inclure les événements sans marqueur spécifique (défaut: `false`)
-- `purge_all` (optionnel) : Supprimer TOUS les événements dans la fenêtre (attention !) (défaut: `false`)
-- `days` (optionnel) : Nombre de jours à scanner (défaut: 120)
-- `match_text` (optionnel) : Filtrer les événements contenant ce texte
-- `debug` (optionnel) : Activer les logs détaillés pour le diagnostic (défaut: `false`)
+- `entry_id` (requis) : ID de l'intégration.
+- `days` (optionnel) : Fenêtre de scan en jours (défaut: 120).
+- `include_unmarked` (optionnel) : Tente de supprimer même les événements sans marqueur explicite (basé sur le sommaire).
+- `purge_all` (optionnel) : Supprime absolument TOUS les événements trouvés dans la fenêtre (attention).
+- `debug` (optionnel) : Affiche les détails techniques dans les logs système (recommandé pour vérification).
 
 **Exemple :**
 ```yaml
-service: custody_schedule.purge_calendar
+action: custody_schedule.purge_calendar
 data:
-  entry_id: "1234567890abcdef1234567890abcdef"
+  entry_id: "01KF1ZW5K8JNX55258QBCF1STF"
   debug: true
 ```
 
