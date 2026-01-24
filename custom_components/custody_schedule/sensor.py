@@ -10,6 +10,7 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, Sen
 from homeassistant.const import UnitOfTime
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
@@ -107,7 +108,13 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         self._attr_device_class = definition.device_class
         self._attr_state_class = definition.state_class
         self._attr_native_unit_of_measurement = definition.unit
-        self._attr_device_info = None
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=child_name,
+            manufacturer="Antigravity",
+            model="Custody Planning",
+            sw_version=entry.version if hasattr(entry, "version") else "1.3.5",
+        )
         # Ajouter des descriptions selon le type de capteur
         descriptions = {
             "next_arrival": "Date et heure de la prochaine arrivée de l'enfant (garde classique ou vacances)",

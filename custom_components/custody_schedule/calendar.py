@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
@@ -42,7 +43,13 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
         self._child_name = child_name
         self._attr_name = f"{child_name} Calendrier"
         self._attr_unique_id = f"{entry.entry_id}_calendar"
-        self._attr_device_info = None
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=child_name,
+            manufacturer="Antigravity",
+            model="Custody Planning",
+            sw_version=entry.version if hasattr(entry, "version") else "1.3.5",
+        )
         self._attr_entity_description = "Calendrier complet affichant tous les événements de garde (weekends/semaines et vacances scolaires)"
         photo = entry.data.get(CONF_PHOTO)
         if photo:

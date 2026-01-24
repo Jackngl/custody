@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -52,7 +53,13 @@ class CustodyPresenceBinarySensor(CoordinatorEntity[CustodyComputation], BinaryS
         self._entry = entry
         self._attr_name = f"{child_name} Présence"
         self._attr_unique_id = f"{entry.entry_id}_presence"
-        self._attr_device_info = None
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=child_name,
+            manufacturer="Antigravity",
+            model="Custody Planning",
+            sw_version=entry.version if hasattr(entry, "version") else "1.3.5",
+        )
         self._attr_entity_description = "Indique si l'enfant est actuellement en garde (garde classique ou vacances scolaires)"
         photo = entry.data.get(CONF_PHOTO)
         if photo:
