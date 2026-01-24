@@ -808,11 +808,23 @@ class CustodyScheduleManager:
             if window_end <= window_start:
                 continue
 
+            translations = {
+                "first_half": "1ère moitié",
+                "second_half": "2ème moitié",
+                "first_week": "1ère semaine",
+                "second_week": "2ème semaine",
+                "even_weeks": "semaines paires",
+                "odd_weeks": "semaines impaires",
+                "even_weekends": "week-ends pairs",
+                "odd_weekends": "week-ends impairs",
+            }
+            rule_label = translations.get(rule, rule)
+
             windows.append(
                 CustodyWindow(
                     start=window_start,
                     end=window_end,
-                    label=f"Vacances scolaires - {holiday.name} ({rule})",
+                    label=f"Vacances scolaires - {holiday.name} ({rule_label})",
                     source="vacation",
                 )
             )

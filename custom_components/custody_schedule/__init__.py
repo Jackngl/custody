@@ -236,7 +236,7 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
                 return
             try:
                 if not self.hass.services.has_service("calendar", "get_events"):
-                    LOGGER.warning("Calendar sync skipped: calendar.get_events not available.")
+                    LOGGER.debug("Calendar sync skipped: calendar.get_events not yet available (normal during startup).")
                     return
                 LOGGER.debug("Calendar sync starting for %s", target)
                 await _sync_calendar_events(self.hass, target, state, config, self.entry.entry_id)
