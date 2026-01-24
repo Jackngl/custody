@@ -743,6 +743,10 @@ async def _sync_calendar_events(
     child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
     location = config.get(CONF_LOCATION) or ""
 
+    desired_keys: set[tuple[str, datetime, datetime]] = set()
+    created = 0
+    updated = 0
+
     # Process additions and updates in parallel (limited concurrency)
     semaphore = asyncio.Semaphore(4)
     tasks = []
@@ -1043,7 +1047,10 @@ async def _async_purge_calendar_events(
             except Exception as e:
                 LOGGER.warning("Parallel purge failed for uid=%s: %s", ev_uid, e)
 
-    for event in events:
+    for event_raw in events:
+        event = _normalize_event_to_dict(event_raw)
+        if not event:
+            continue
         summary = event.get("summary") or event.get("message") or ""
         description = event.get("description") or ""
         uid, recurrence_id = _extract_event_uid_and_recurrence(event)
