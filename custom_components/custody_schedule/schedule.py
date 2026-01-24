@@ -469,7 +469,8 @@ class CustodyScheduleManager:
         
         custody_type = self._config.get("custody_type", "alternate_week")
         type_def = CUSTODY_TYPES.get(custody_type) or CUSTODY_TYPES["alternate_week"]
-        horizon = now + timedelta(days=90)
+        # Use a longer horizon (400 days) to support 365-day calendar sync
+        horizon = now + timedelta(days=400)
 
         # Cas particulier : week-ends basés sur la parité ISO des semaines
         if custody_type == "alternate_weekend":
@@ -661,8 +662,9 @@ class CustodyScheduleManager:
         zone = self._config.get(CONF_ZONE)
         if not zone:
             return []
-
-        holidays = await self._holidays.async_list(zone, now.year)
+        
+        # Fetch holidays without year restriction to get current and next school years
+        holidays = await self._holidays.async_list(zone)
         windows: list[CustodyWindow] = []
         summer_rule = self._config.get(CONF_SUMMER_RULE)
         july_rule = self._config.get(CONF_JULY_RULE)
@@ -1143,7 +1145,8 @@ class CustodyScheduleManager:
         if not zone:
             return "school", None
 
-        holidays = await self._holidays.async_list(zone, now.year)
+        # Fetch holidays without year restriction to get current and next school years
+        holidays = await self._holidays.async_list(zone)
         for holiday in holidays:
             effective_start, effective_end, _mid = self._effective_holiday_bounds(holiday)
             if effective_start <= now <= effective_end:
@@ -1171,8 +1174,9 @@ class CustodyScheduleManager:
             LOGGER.warning("No zone configured, cannot fetch school holidays")
             return None, None, None, None, []
 
-        LOGGER.debug("Fetching holidays for zone=%s, year=%s", zone, now.year)
-        holidays = await self._holidays.async_list(zone, now.year)
+        # Fetch holidays without year restriction to get current and next school years
+        LOGGER.debug("Fetching school holidays for zone=%s", zone)
+        holidays = await self._holidays.async_list(zone)
         LOGGER.debug("Retrieved %d holidays from API", len(holidays))
         
         if not holidays:
