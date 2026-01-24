@@ -371,6 +371,10 @@ class CustodyScheduleManager:
         # Also creates filter windows that cover the entire vacation period
         vacation_windows = await self._generate_vacation_windows(now)
         
+        # Add parental day windows (Mother/Father days) to vacation windows for priority filtering
+        parental_windows = self._build_parental_day_windows(now)
+        vacation_windows.extend(parental_windows)
+        
         # 2. Generate weekend/pattern windows based on custody_type
         # This creates the normal weekend schedule (e.g., even weekends, alternate weekends)
         # Pass vacation_windows to check if weekends/weeks fall during vacations before applying public holidays
@@ -485,48 +489,47 @@ class CustodyScheduleManager:
     def _filter_windows_by_vacations(
         self, pattern_windows: list[CustodyWindow], vacation_windows: list[CustodyWindow]
     ) -> list[CustodyWindow]:
-        """Remove pattern windows (weekends/weeks) that overlap with vacation periods.
+        """Remove or truncate pattern windows that overlap with vacation periods.
         
-        This implements the priority rule: vacations override weekends/weeks.
-        Vacation periods completely replace normal custody rules.
-        
-        IMPORTANT: Always filter using the full vacation period (vacation_filter),
-        because vacations override regular custody for all parents, even if the
-        custody vacation segment is assigned to the other parent.
-        
-        Args:
-            pattern_windows: Normal weekend/week windows from custody_type
-            vacation_windows: Vacation windows including filter windows (source="vacation_filter")
-        
-        Returns:
-            Filtered pattern windows with vacation overlaps removed
+        Vacations (and special days like Mother's Day) have priority over normal pattern rules.
+        Instead of removing the entire window on overlap, we subtract the overlapping part.
         """
         if not vacation_windows:
             return pattern_windows
         
-        # Build a list of vacation periods (start, end) for quick overlap checking.
-        # Use full vacation filter windows when available to enforce priority.
+        # Build a list of priority periods (start, end) for quick overlap checking.
         vacation_periods = [(vw.start, vw.end) for vw in vacation_windows if vw.source == "vacation_filter"]
         if not vacation_periods:
+            # Fallback to display windows if no filter windows (should not happen for vacations)
             vacation_periods = [(vw.start, vw.end) for vw in vacation_windows]
         
-        filtered = []
-        for pattern_window in pattern_windows:
-            # Check if this pattern window (weekend/week) overlaps with any actual vacation custody period
-            overlaps = False
-            for vac_start, vac_end in vacation_periods:
-                # Check for overlap: windows overlap if one starts before the other ends
-                # But only if there's a REAL overlap (not just touching at the edges)
-                # A weekend that ends exactly when vacation starts should NOT be filtered
-                if pattern_window.start < vac_end and pattern_window.end > vac_start:
-                    overlaps = True
-                    break
-            
-            # Only keep pattern windows that don't overlap with actual vacation custody periods
-            if not overlaps:
-                filtered.append(pattern_window)
+        # Process each priority period one by one, subtracting from the set of pattern windows
+        current_active_windows = list(pattern_windows)
         
-        return filtered
+        for vac_start, vac_end in vacation_periods:
+            next_pass_windows = []
+            for item in current_active_windows:
+                # 1. No overlap at all? Keep the window as is.
+                if item.start >= vac_end or item.end <= vac_start:
+                    next_pass_windows.append(item)
+                    continue
+                
+                # 2. Partials overlaps - Subtract the overlapping range
+                # Handle the part before the vacation segment
+                if item.start < vac_start:
+                    next_pass_windows.append(
+                        CustodyWindow(item.start, vac_start, item.label, item.source)
+                    )
+                
+                # Handle the part after the vacation segment
+                if item.end > vac_end:
+                    next_pass_windows.append(
+                        CustodyWindow(vac_end, item.end, item.label, item.source)
+                    )
+                    
+            current_active_windows = next_pass_windows
+            
+        return current_active_windows
 
     def _is_in_vacation_period(self, check_date: datetime, vacation_windows: list[CustodyWindow]) -> bool:
         """Check if a date falls within any vacation period.

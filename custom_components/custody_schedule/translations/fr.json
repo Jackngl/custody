@@ -160,7 +160,9 @@
           "zone": "Zone scolaire",
           "vacation_split_mode": "Répartition des moitiés",
           "school_level": "Niveau scolaire",
-          "alsace_moselle": "Activer les jours fériés Alsace-Moselle (Vendredi Saint, St-Étienne)"
+          "alsace_moselle": "Activer les jours fériés Alsace-Moselle (Vendredi Saint, St-Étienne)",
+          "parental_role": "Mon rôle (Papa/Maman)",
+          "auto_parent_days": "Gestion auto de la Fête des mères/pères"
         }
       },
       "advanced": {

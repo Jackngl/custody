@@ -1,6 +1,6 @@
 # 👨‍👩‍👧‍👦 Planning de garde (Custody Schedule)
 
-![Version](https://img.shields.io/badge/version-1.5.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
@@ -27,7 +27,7 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
 ## ✨ Fonctionnalités principales
 
 - ✅ **Configuration simplifiée** : parcours guidé avec labels clairs (enfant ➜ garde ➜ vacances ➜ options)
-- ✅ **Calcul intelligent** : alternance automatique des vacances chaque année.
+- ✅ **Calcul intelligent** : alternance automatique des vacances chaque année et gestion des priorités (les vacances et fêtes parentales "découpent" proprement les week-ends classiques).
 - ✅ **Calcul automatique** des périodes selon plusieurs rythmes :
   - Semaine alternée (1/1)
   - Week-end alterné
