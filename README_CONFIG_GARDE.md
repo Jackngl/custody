@@ -480,7 +480,8 @@ L'application utilise **deux masques de saisie distincts** :
 2. **Masque "Vacances scolaires"** :
    - Zone scolaire (A/B/C)
    - Répartition des moitiés
-   - **L'été est automatiquement divisé selon cette même règle.**
+   - **Découpage été** : choisissez entre "2 Moitiés" (juillet/août) ou "4 Quinzaines" (alternance tous les 15j).
+   - **Calcul équitable** : l'été est divisé en parts égales basées sur les dates réelles des vacances.
 
 ### Priorité des règles
 
@@ -548,6 +549,6 @@ Pour toute question sur la configuration de la garde normale :
 
 ---
 
-**Dernière mise à jour** : Version 1.4.0
+**Dernière mise à jour** : Version 1.4.1
 
  

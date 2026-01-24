@@ -15,7 +15,6 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv, selector
 from homeassistant.util import dt as dt_util, slugify
 
-from .const import (
     CONF_ARRIVAL_TIME,
     CONF_CALENDAR_SYNC,
     CONF_CALENDAR_TARGET,
@@ -39,6 +38,7 @@ from .const import (
     CONF_REFERENCE_YEAR_VACATIONS,
     CONF_SCHOOL_LEVEL,
     CONF_START_DAY,
+    CONF_SUMMER_SPLIT_MODE,
     CONF_VACATION_SPLIT_MODE,
     CONF_ZONE,
     CUSTODY_TYPES,
@@ -171,6 +171,20 @@ def _start_day_selector() -> selector.SelectSelector:
 
 
 
+
+
+def _summer_split_selector() -> selector.SelectSelector:
+    """Create a selector for summer split mode (halves vs quarters)."""
+    options_list = [
+        {"value": "half", "label": "2 Moitiés (Juillet / Août)"},
+        {"value": "quarter", "label": "4 Quinzaines (Alternance tous les 15j)"},
+    ]
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=options_list,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
 
 
 def _vacation_split_selector() -> selector.SelectSelector:
@@ -459,6 +473,9 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_SCHOOL_LEVEL, default=self._data.get(CONF_SCHOOL_LEVEL, "primary")
                 ): _school_level_selector(),
                 vol.Required(CONF_VACATION_SPLIT_MODE, default=vacation_split_default): _vacation_split_selector(),
+                vol.Required(
+                    CONF_SUMMER_SPLIT_MODE, default=self._data.get(CONF_SUMMER_SPLIT_MODE, "half")
+                ): _summer_split_selector(),
             }
         )
         return self.async_show_form(step_id="vacations", data_schema=schema)
@@ -1022,6 +1039,9 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                     CONF_SCHOOL_LEVEL, default=data.get(CONF_SCHOOL_LEVEL, "primary")
                 ): _school_level_selector(),
                 vol.Required(CONF_VACATION_SPLIT_MODE, default=vacation_split_default): _vacation_split_selector(),
+                vol.Required(
+                    CONF_SUMMER_SPLIT_MODE, default=data.get(CONF_SUMMER_SPLIT_MODE, "half")
+                ): _summer_split_selector(),
             }
         )
         return self.async_show_form(step_id="vacations", data_schema=schema)

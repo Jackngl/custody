@@ -670,6 +670,7 @@ class CustodyScheduleManager:
         # For all holidays (including summer), use automatic parity logic: 
         # odd year = first part, even year = second part (or vice versa)
         rule = None
+        summer_mode = self._config.get(CONF_SUMMER_SPLIT_MODE, "half")
 
         for holiday in holidays:
             start, end, midpoint = self._effective_holiday_bounds(holiday)
@@ -706,6 +707,39 @@ class CustodyScheduleManager:
                 rule = "first_half" if not is_even_year else "second_half"
 
             if not rule:
+                continue
+
+            # Handle summer quarter-split if enabled
+            is_summer = "été" in holiday.name.lower() or holiday.start.month in (7, 8)
+            if is_summer and summer_mode == "quarter":
+                # Split the whole summer duration [start, end] into 4 equal segments
+                total_duration = end - start
+                seg_duration = total_duration / 4
+                
+                parts = [
+                    (start, start + seg_duration),
+                    (start + seg_duration, start + 2 * seg_duration),
+                    (start + 2 * seg_duration, start + 3 * seg_duration),
+                    (start + 3 * seg_duration, end)
+                ]
+                
+                # Parent with "first_half" rule gets parts 1 and 3
+                # Parent with "second_half" rule gets parts 2 and 4
+                if rule == "first_half":
+                    target_parts = [parts[0], parts[2]]
+                else:
+                    target_parts = [parts[1], parts[3]]
+                
+                for p_start, p_end in target_parts:
+                    if p_end > p_start:
+                        windows.append(
+                            CustodyWindow(
+                                start=p_start,
+                                end=p_end,
+                                label=f"Vacances scolaires - {holiday.name} (Quinzaine)",
+                                source="vacation",
+                            )
+                        )
                 continue
 
             window_start = start
