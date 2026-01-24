@@ -929,24 +929,6 @@ async def _async_purge_calendar_events(
             type(sample_raw).__name__,
             ", ".join(sorted(sample_event.keys())) if isinstance(sample_event, dict) else "not a dict",
         )
-        # INTROSPECTION DEBUG: Log all attributes of the raw object
-        try:
-            attributes = dir(sample_raw)
-            LOGGER.info("Purge debug%s: RAW EVENT ATTRIBUTES: %s", context, attributes)
-            # Log values of likely ID candidates
-            for attr in attributes:
-                if any(x in attr.lower() for x in ["id", "uid", "uuid", "key"]):
-                    try:
-                        val = getattr(sample_raw, attr)
-                        LOGGER.info("Purge debug%s: RAW ATTR %s = %s", context, attr, val)
-                    except Exception:
-                        pass
-            # Should also check if it's a dict and dump it all
-            if isinstance(sample_raw, dict):
-                 LOGGER.info("Purge debug%s: RAW DICT DUMP: %s", context, sample_raw)
-        except Exception as e:
-            LOGGER.error("Purge debug%s: failed to introspect event: %s", context, e)
-
         if isinstance(sample_event, dict):
             import json
             try:
