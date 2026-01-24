@@ -109,17 +109,20 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     config = {**entry.data, **(entry.options or {})}
     child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
     match_text = child_label or ""
-    await _async_purge_calendar_events(
-        hass,
-        entry.entry_id,
-        config,
-        include_unmarked=True,
-        purge_all=False,
-        days=3650,
-        match_text=match_text,
-        debug=True,
-        raise_on_error=False,
-        log_context="entry removal",
+    # Purge in the background to return quickly to the UI
+    hass.async_create_task(
+        _async_purge_calendar_events(
+            hass,
+            entry.entry_id,
+            config,
+            include_unmarked=True,
+            purge_all=False,
+            days=3650,
+            match_text=match_text,
+            debug=True,
+            raise_on_error=False,
+            log_context="entry removal",
+        )
     )
 
 
@@ -153,7 +156,8 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
             raise UpdateFailed(f"Unable to compute custody schedule: {err}") from err
 
         self._fire_events(state)
-        await self._maybe_sync_calendar(state)
+        # Sync in background to allow setups/updates to return quickly
+        self.hass.async_create_task(self._maybe_sync_calendar(state))
         self._last_state = state
         return state
 
@@ -739,9 +743,43 @@ async def _sync_calendar_events(
     child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
     location = config.get(CONF_LOCATION) or ""
 
-    desired_keys: set[tuple[str, datetime, datetime]] = set()
-    created = 0
-    updated = 0
+    # Process additions and updates in parallel (limited concurrency)
+    semaphore = asyncio.Semaphore(4)
+    tasks = []
+
+    async def _async_create_event(w, sm, m, target, loc):
+        async with semaphore:
+            await hass.services.async_call(
+                "calendar",
+                "create_event",
+                {
+                    "entity_id": target,
+                    "summary": sm,
+                    "start_date_time": _ensure_local_tz(w.start).isoformat(),
+                    "end_date_time": _ensure_local_tz(w.end).isoformat(),
+                    "description": f"{m} Planning de garde ({w.source})",
+                    "location": loc,
+                },
+                blocking=True,
+            )
+
+    async def _async_update_event(ev_id, sm, w, m, target, loc, src):
+        async with semaphore:
+            await hass.services.async_call(
+                "calendar",
+                "update_event",
+                {
+                    "entity_id": target,
+                    "event_id": ev_id,
+                    "summary": sm,
+                    "start_date_time": _ensure_local_tz(w.start).isoformat(),
+                    "end_date_time": _ensure_local_tz(w.end).isoformat(),
+                    "description": f"{m} Planning de garde ({src})",
+                    "location": loc,
+                },
+                blocking=True,
+            )
+
     for window in state.windows:
         if window.source == "vacation_filter":
             continue
@@ -751,80 +789,48 @@ async def _sync_calendar_events(
         key = _event_key(summary, window.start, window.end)
         desired_keys.add(key)
         if key not in existing_keys:
-            await hass.services.async_call(
-                "calendar",
-                "create_event",
-                {
-                    "entity_id": target,
-                    "summary": summary,
-                    "start_date_time": _ensure_local_tz(window.start).isoformat(),
-                    "end_date_time": _ensure_local_tz(window.end).isoformat(),
-                    "description": f"{marker} Planning de garde ({window.source})",
-                    "location": location,
-                },
-                blocking=True,
-            )
+            tasks.append(_async_create_event(window, summary, marker, target, location))
             created += 1
         elif hass.services.has_service("calendar", "update_event"):
-            # Update events if metadata changed (location/description)
             existing = next((ev for ev in existing_events if ev.get("__key") == key), None)
             if existing:
                 event_id = _extract_event_id(existing)
                 if event_id:
-                    existing_desc = existing.get("description") or ""
-                    existing_loc = existing.get("location") or ""
                     new_desc = f"{marker} Planning de garde ({window.source})"
-                    if existing_desc != new_desc or existing_loc != location:
-                        await hass.services.async_call(
-                            "calendar",
-                            "update_event",
-                            {
-                                "entity_id": target,
-                                "event_id": event_id,
-                                "summary": summary,
-                                "start_date_time": _ensure_local_tz(window.start).isoformat(),
-                                "end_date_time": _ensure_local_tz(window.end).isoformat(),
-                                "description": new_desc,
-                                "location": location,
-                            },
-                            blocking=True,
-                        )
+                    if existing.get("description") != new_desc or existing.get("location") != location:
+                        tasks.append(_async_update_event(event_id, summary, window, marker, target, location, window.source))
                         updated += 1
 
-    # Delete events that no longer exist in the planning
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Delete events that no longer exist in the planning (parallel)
     delete_service = _get_calendar_delete_service(hass)
-    deleted = 0
-    for event in existing_events:
-        key = event.get("__key")
-        if key in desired_keys:
-            continue
-        uid, recurrence_id = _extract_event_uid_and_recurrence(event)
-        if not uid:
-            continue
-        if delete_service:
+    deleted_count = [0] # Mutable for closure
+    del_tasks = []
+
+    async def _async_delete_event(ev, ds, target):
+        uid, rid = _extract_event_uid_and_recurrence(ev)
+        if not uid: return
+        async with semaphore:
             try:
-                # Build service data - Google Calendar expects uid and optionally recurrence_id
-                service_data = {"entity_id": target, "uid": str(uid).strip()}
-                if recurrence_id and str(recurrence_id).strip():
-                    service_data["recurrence_id"] = str(recurrence_id).strip()
-                
-                LOGGER.debug("Calling calendar.%s service in sync with data: %s", delete_service, service_data)
-                await hass.services.async_call(
-                    "calendar",
-                    delete_service,
-                    service_data,
-                    blocking=True,
-                )
-                deleted += 1
-                LOGGER.debug("Service delete succeeded in sync for uid=%s", uid)
-            except Exception as err:
-                LOGGER.warning("Service delete failed in sync for uid=%s: %s, trying direct entity access", 
-                             uid, err, exc_info=True)
-                if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
-                    deleted += 1
-        else:
-            if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
-                deleted += 1
+                if ds:
+                    sd = {"entity_id": target, "uid": str(uid).strip()}
+                    if rid: sd["recurrence_id"] = str(rid).strip()
+                    await hass.services.async_call("calendar", ds, sd, blocking=True)
+                else:
+                    await _delete_calendar_event_direct(hass, target, uid, rid)
+                deleted_count[0] += 1
+            except Exception as e:
+                LOGGER.warning("Parallel delete failed: %s", e)
+
+    for event in existing_events:
+        if event.get("__key") not in desired_keys:
+            del_tasks.append(_async_delete_event(event, delete_service, target))
+    
+    if del_tasks:
+        await asyncio.gather(*del_tasks, return_exceptions=True)
+    deleted = deleted_count[0]
     if deleted > 0:
         LOGGER.debug(
             "Calendar sync summary for %s: created=%d updated=%d deleted=%d",
@@ -1017,52 +1023,55 @@ async def _async_purge_calendar_events(
         if text_match:
             stats["text"] += 1
 
-        if purge_all:
-            matches = True
-        else:
-            matches = marker_match or legacy_match or prefix_match or label_match or text_match
+    # Perform deletions in parallel (limited concurrency)
+    semaphore = asyncio.Semaphore(4)
+    del_tasks = []
+    deleted_count = [0]
+
+    async def _async_delete_task(ev, ds, target):
+        ev_uid, ev_rid = _extract_event_uid_and_recurrence(ev)
+        if not ev_uid: return
+        async with semaphore:
+            try:
+                if ds:
+                    sd = {"entity_id": target, "uid": str(ev_uid).strip()}
+                    if ev_rid: sd["recurrence_id"] = str(ev_rid).strip()
+                    await hass.services.async_call("calendar", ds, sd, blocking=True)
+                else:
+                    await _delete_calendar_event_direct(hass, target, ev_uid, ev_rid)
+                deleted_count[0] += 1
+            except Exception as e:
+                LOGGER.warning("Parallel purge failed for uid=%s: %s", ev_uid, e)
+
+    for event in events:
+        summary = event.get("summary") or event.get("message") or ""
+        description = event.get("description") or ""
+        uid, recurrence_id = _extract_event_uid_and_recurrence(event)
+
+        marker_match = marker and _matches_marker({"description": description}, marker)
+        legacy_match = not marker and "Planning de garde" in description
+        prefix_match = summary_prefix and summary.startswith(summary_prefix)
+        label_match = child_label and child_label in summary
+        text_match = match_text and match_text_lower in summary.lower()
+
+        if marker_match: stats["marker"] += 1
+        if legacy_match: stats["legacy"] += 1
+        if prefix_match: stats["prefix"] += 1
+        if label_match: stats["label"] += 1
+        if text_match: stats["text"] += 1
+
+        matches = purge_all or (marker_match or legacy_match or prefix_match or label_match or text_match)
 
         if matches:
             matched += 1
             if not uid:
                 missing_id += 1
-                if debug and len(debug_matches) < 10:
-                    all_keys = ", ".join(sorted(event.keys())) if isinstance(event, dict) else "not a dict"
-                    debug_matches.append(
-                        f"summary='{_truncate(summary)}' uid=None recurrence_id={recurrence_id} "
-                        f"all_keys=[{all_keys}] desc='{_truncate(description)}'"
-                    )
                 continue
-            if debug and len(debug_matches) < 10:
-                debug_matches.append(
-                    f"summary='{_truncate(summary)}' uid='{uid}' recurrence_id={recurrence_id} "
-                    f"marker={marker_match} legacy={legacy_match} prefix={prefix_match} "
-                    f"label={label_match} text={text_match} desc='{_truncate(description)}'"
-                )
-            if delete_service:
-                try:
-                    # Build service data - Google Calendar expects uid and optionally recurrence_id
-                    service_data = {"entity_id": target, "uid": str(uid).strip()}
-                    if recurrence_id and str(recurrence_id).strip():
-                        service_data["recurrence_id"] = str(recurrence_id).strip()
-                    
-                    LOGGER.debug("Calling calendar.%s service with data: %s", delete_service, service_data)
-                    await hass.services.async_call(
-                        "calendar",
-                        delete_service,
-                        service_data,
-                        blocking=True,
-                    )
-                    deleted += 1
-                    LOGGER.debug("Service delete succeeded for uid=%s", uid)
-                except Exception as err:
-                    LOGGER.warning("Service delete failed for uid=%s: %s, trying direct entity access", 
-                                 uid, err, exc_info=True)
-                    if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
-                        deleted += 1
-            else:
-                if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
-                    deleted += 1
+            del_tasks.append(_async_delete_task(event, delete_service, target))
+    
+    if del_tasks:
+        await asyncio.gather(*del_tasks, return_exceptions=True)
+    deleted = deleted_count[0]
         else:
             if debug and len(debug_misses) < 10:
                 debug_misses.append(
