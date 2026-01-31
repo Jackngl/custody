@@ -14,11 +14,8 @@ INTENT_WHO_HAS_CHILD = "CustodyWhoHasChild"
 async def async_setup_intents(hass: HomeAssistant) -> None:
     """Set up the custody intents."""
     # Register intent only if not already present to avoid warnings on reloads
-    try:
+    if not any(h[0] == INTENT_WHO_HAS_CHILD for h in intent.async_get_handlers(hass)):
         intent.async_register(hass, CustodyWhoHasChildHandler())
-    except intent.IntentError:
-        # Already registered, skip
-        pass
 
 class CustodyWhoHasChildHandler(intent.IntentHandler):
     """Handler for CustodyWhoHasChild intent."""

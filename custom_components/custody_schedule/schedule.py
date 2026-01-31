@@ -776,6 +776,9 @@ class CustodyScheduleManager:
 
     async def _generate_vacation_windows(self, now: datetime) -> list[CustodyWindow]:
         """Optional windows driven by vacation rules."""
+        zone = self._config.get(CONF_ZONE)
+        if not zone:
+            return []
         country = self._config.get(CONF_COUNTRY, DEFAULT_COUNTRY)
         # Fetch holidays without year restriction to get current and next school years
         holidays = await self._holidays.async_list(country, zone)
@@ -1082,6 +1085,10 @@ class CustodyScheduleManager:
 
     async def _determine_period(self, now: datetime) -> tuple[str, str | None]:
         """Return ('school'|'vacation', holiday_name)."""
+        zone = self._config.get(CONF_ZONE)
+        if not zone:
+            return "school", None
+
         country = self._config.get(CONF_COUNTRY, DEFAULT_COUNTRY)
         # Fetch holidays without year restriction to get current and next school years
         holidays = await self._holidays.async_list(country, zone)
@@ -1105,8 +1112,11 @@ class CustodyScheduleManager:
         Returned start/end correspond to the next *custody segment* during that vacation
         (e.g., if rule is "second_half", start is the midpoint, not the vacation start).
         """
-        from .const import LOGGER
-        
+        zone = self._config.get(CONF_ZONE)
+        if not zone:
+            LOGGER.warning("No zone configured, cannot fetch school holidays")
+            return None, None, None, None, []
+
         country = self._config.get(CONF_COUNTRY, DEFAULT_COUNTRY)
         # Fetch holidays without year restriction to get current and next school years
         LOGGER.debug("Fetching school holidays for country=%s, zone=%s", country, zone)
