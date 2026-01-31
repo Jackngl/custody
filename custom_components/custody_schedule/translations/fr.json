@@ -47,6 +47,7 @@
         "title": "Vacances scolaires",
         "description": "Configurer les règles de garde pendant les vacances scolaires. Les vacances priment sur la garde classique. La répartition choisie s'applique automatiquement à toutes les vacances, y compris l'été.",
         "data": {
+          "country": "Pays",
           "zone": "Zone scolaire",
           "vacation_split_mode": "Répartition des moitiés",
           "school_level": "Niveau scolaire",
@@ -140,6 +141,42 @@
       }
     }
   },
+  "entity": {
+    "binary_sensor": {
+      "presence": {
+        "name": "Présence"
+      },
+      "calendar": {
+        "name": "Calendrier"
+      },
+      "tracker": {
+        "name": "Suivi"
+      }
+    },
+    "sensor": {
+      "next_arrival": {
+        "name": "Prochaine arrivée"
+      },
+      "next_departure": {
+        "name": "Prochain départ"
+      },
+      "days_remaining": {
+        "name": "Jours restants"
+      },
+      "current_period": {
+        "name": "Période actuelle"
+      },
+      "next_vacation_name": {
+        "name": "Prochaines vacances"
+      },
+      "next_vacation_start": {
+        "name": "Début des prochaines vacances"
+      },
+      "days_until_vacation": {
+        "name": "Jours jusqu'aux vacances"
+      }
+    }
+  },
   "error": {
     "invalid_local_photo": "Utilisez une URL, une source média ou placez l'image dans /config/www pour qu'elle soit accessible via /local/...",
     "invalid_child_name": "Saisissez au moins une lettre ou un chiffre (les accents sont supprimés automatiquement).",
@@ -197,6 +234,7 @@
         "title": "Vacances scolaires",
         "description": "Modifier la zone scolaire et les règles de garde pendant les vacances. Les vacances priment sur la garde classique. La répartition choisie s'applique automatiquement à toutes les vacances, y compris l'été.",
         "data": {
+          "country": "Pays",
           "zone": "Zone scolaire",
           "vacation_split_mode": "Répartition des moitiés",
           "school_level": "Niveau scolaire",
@@ -241,6 +279,22 @@
       "friday": "Vendredi",
       "saturday": "Samedi",
       "sunday": "Dimanche"
+    },
+    "school_level": {
+      "primary": "Primaire",
+      "middle": "Collège",
+      "high": "Lycée"
+    },
+    "country": {
+      "FR": "France",
+      "BE": "Belgique",
+      "CH": "Suisse",
+      "LU": "Luxembourg",
+      "CA_QC": "Québec"
+    },
+    "summer_split": {
+      "half": "Moitiés (1/2)",
+      "quarter": "Quarts (1/4)"
     }
   }
 }

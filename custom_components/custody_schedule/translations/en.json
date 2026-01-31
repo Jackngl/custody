@@ -47,6 +47,7 @@
         "title": "School vacations",
         "description": "Configure custody rules during school holidays. Vacations take priority over regular custody. The chosen split applies automatically to all holidays, including summer.",
         "data": {
+          "country": "Country",
           "zone": "School zone",
           "vacation_split_mode": "Half split",
           "school_level": "School level",
@@ -137,6 +138,42 @@
         "data": {
           "exception_id": "Recurring exception"
         }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "presence": {
+        "name": "Presence"
+      },
+      "calendar": {
+        "name": "Calendar"
+      },
+      "tracker": {
+        "name": "Tracker"
+      }
+    },
+    "sensor": {
+      "next_arrival": {
+        "name": "Next arrival"
+      },
+      "next_departure": {
+        "name": "Next departure"
+      },
+      "days_remaining": {
+        "name": "Days remaining"
+      },
+      "current_period": {
+        "name": "Current period"
+      },
+      "next_vacation_name": {
+        "name": "Next vacations"
+      },
+      "next_vacation_start": {
+        "name": "Next vacations start"
+      },
+      "days_until_vacation": {
+        "name": "Days until vacations"
       }
     }
   },
@@ -255,6 +292,17 @@
     "vacation_split": {
       "odd_first": "Odd years = 1st half",
       "odd_second": "Odd years = 2nd half"
+    },
+    "country": {
+      "FR": "France",
+      "BE": "Belgium",
+      "CH": "Switzerland",
+      "LU": "Luxembourg",
+      "CA_QC": "Quebec"
+    },
+    "summer_split": {
+      "half": "Halves (1/2)",
+      "quarter": "Quarters (1/4)"
     }
   }
 }

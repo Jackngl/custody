@@ -33,24 +33,23 @@ async def async_setup_entry(
 
 
 class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntity):
-    """Calendrier complet du planning de garde (garde classique et vacances scolaires)."""
+    """Calendar showing regular custody and vacations."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
+    _attr_translation_key = "calendar"
 
     def __init__(self, coordinator: CustodyScheduleCoordinator, entry: ConfigEntry, child_name: str) -> None:
         super().__init__(coordinator)
         self._entry = entry
         self._child_name = child_name
-        self._attr_name = f"{child_name} Calendrier"
         self._attr_unique_id = f"{entry.entry_id}_calendar"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name=child_name,
-            manufacturer="Antigravity",
+            manufacturer="Custody",
             model="Custody Planning",
-            sw_version=entry.version if hasattr(entry, "version") else "1.3.5",
+            sw_version="1.8.0",
         )
-        self._attr_entity_description = "Calendrier complet affichant tous les événements de garde (weekends/semaines et vacances scolaires)"
         photo = entry.data.get(CONF_PHOTO)
         if photo:
             self._attr_entity_picture = photo
@@ -88,9 +87,9 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
         """Convert an internal window to a CalendarEvent."""
         # Distinguish between weekend custody and vacation custody in description
         if window.source == "vacation" or window.source == "summer":
-            description = f"Vacances scolaires • {window.label}"
+            description = f"School vacation • {window.label}"
         elif window.source == "pattern":
-            description = f"Garde normale • {window.label}"
+            description = f"Regular custody • {window.label}"
         else:
             description = f"{window.label} • Source: {window.source}"
         

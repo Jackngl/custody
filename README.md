@@ -699,10 +699,10 @@ Les résultats sont disponibles dans les logs Home Assistant (Paramètres → Sy
 - [x] **Blueprints** : Ajout du premier modèle d'annonce Alexa
 - [x] **Raffinements Assist** : Phrases personnalisées ("Qui a Lucas ?")
 
-### v1.8 (En cours ⚡)
-- [x] **Support Billingue** : Traductions intégrales Français / Anglais
-- [ ] **Ouverture Internationale** : Support des calendriers scolaires pour Belgique, Suisse, Luxembourg et Québec
-- [ ] **Détection de langue** : Adaptation automatique selon la configuration HA
+### v1.8 (Disponible 🚀)
+- [x] **Support Billingue** : Traductions intégrales Français / Anglais (Entities, Config Flow, Assist)
+- [x] **Internationalisation** : Support des calendriers scolaires et jours fériés pour Belgique, Suisse, Luxembourg et Québec
+- [x] **Détection de langue** : Adaptation automatique selon la configuration HA pour Assist
 
 ### v1.9
 - [ ] **Mode "Échange Rapide"** : Bouton de confirmation d'échange avec notification au co-parent et log historique

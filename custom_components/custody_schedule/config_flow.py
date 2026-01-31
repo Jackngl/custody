@@ -46,6 +46,7 @@ from .const import (
     CONF_VACATION_SPLIT_MODE,
     CONF_ZONE,
     CUSTODY_TYPES,
+    DEFAULT_COUNTRY,
     DOMAIN,
     FRENCH_ZONES,
     FRENCH_ZONES_WITH_CITIES,
@@ -94,6 +95,7 @@ def _zone_selector() -> selector.SelectSelector:
         selector.SelectSelectorConfig(
             options=options_list,
             mode=selector.SelectSelectorMode.DROPDOWN,
+            translation_key="zone",
         )
     )
 
@@ -103,77 +105,57 @@ def _school_level_selector() -> selector.SelectSelector:
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=[
-                {"value": "primary", "label": "Primaire"},
-                {"value": "middle", "label": "Collège"},
-                {"value": "high", "label": "Lycée"},
+                {"value": "primary", "label": "Primary"},
+                {"value": "middle", "label": "Middle school"},
+                {"value": "high", "label": "High school"},
             ],
             mode=selector.SelectSelectorMode.DROPDOWN,
+            translation_key="school_level",
         )
     )
 
 
 def _custody_type_selector() -> selector.SelectSelector:
-    """Create a custody type selector with French labels."""
-    translations = {
-        "alternate_week": "Semaines alternées (1/1)",
-        "alternate_week_parity": "Semaines alternées",
-        "alternate_weekend": "Week-ends alternés",
-        "two_two_three": "2-2-3",
-        "two_two_five_five": "2-2-5-5",
-        "custom": "Personnalisé",
-    }
+    """Create a custody type selector with localized labels."""
     options_list = [
-        {"value": key, "label": translations.get(key, key)} for key in sorted(CUSTODY_TYPES.keys())
+        {"value": key, "label": key} for key in sorted(CUSTODY_TYPES.keys())
     ]
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=options_list,
             mode=selector.SelectSelectorMode.DROPDOWN,
+            translation_key="custody_type",
         )
     )
 
 
 def _reference_year_selector() -> selector.SelectSelector:
-    """Create a reference year selector with French labels."""
-    translations = {
-        "even": "Paire",
-        "odd": "Impaire",
-    }
+    """Create a reference year selector with localized labels."""
     options_list = [
-        {"value": year, "label": translations.get(year, year)} for year in REFERENCE_YEARS
+        {"value": year, "label": year} for year in REFERENCE_YEARS
     ]
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=options_list,
             mode=selector.SelectSelectorMode.LIST,
+            translation_key="reference_year",
         )
     )
 
 
 def _start_day_selector() -> selector.SelectSelector:
-    """Create a start day selector with French labels."""
-    translations = {
-        "monday": "Lundi",
-        "tuesday": "Mardi",
-        "wednesday": "Mercredi",
-        "thursday": "Jeudi",
-        "friday": "Vendredi",
-        "saturday": "Samedi",
-        "sunday": "Dimanche",
-    }
+    """Create a start day selector with localized labels."""
     days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
     options_list = [
-        {"value": day, "label": translations.get(day, day)} for day in days
+        {"value": day, "label": day} for day in days
     ]
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=options_list,
             mode=selector.SelectSelectorMode.DROPDOWN,
+            translation_key="start_day",
         )
     )
-
-
-
 
 
 def _summer_split_selector() -> selector.SelectSelector:
@@ -476,21 +458,32 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Configure vacances scolaires - step 3."""
+        """Configure school vacations - step 3."""
         if user_input:
             self._data.update(user_input)
             return await self.async_step_advanced()
 
-        # Get reference_year for vacations (separate from custody reference_year)
-        # Default to "even" if not set
-        reference_year_default = self._data.get(
-            CONF_REFERENCE_YEAR_VACATIONS, self._data.get(CONF_REFERENCE_YEAR, "even")
-        )
+        # Defaults
+        country_default = self._data.get(CONF_COUNTRY, DEFAULT_COUNTRY)
+        zone_default = self._data.get(CONF_ZONE, "A")
         vacation_split_default = self._data.get(CONF_VACATION_SPLIT_MODE, "odd_first")
         
         schema = vol.Schema(
             {
-                vol.Required(CONF_ZONE, default=self._data.get(CONF_ZONE, "A")): _zone_selector(),
+                vol.Required(CONF_COUNTRY, default=country_default): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            {"value": "FR", "label": "France"},
+                            {"value": "BE", "label": "Belgique"},
+                            {"value": "CH", "label": "Suisse"},
+                            {"value": "LU", "label": "Luxembourg"},
+                            {"value": "CA_QC", "label": "Québec"},
+                        ],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        translation_key="country",
+                    )
+                ),
+                vol.Required(CONF_ZONE, default=zone_default): _zone_selector(),
                 vol.Optional(
                     CONF_SCHOOL_LEVEL, default=self._data.get(CONF_SCHOOL_LEVEL, "primary")
                 ): _school_level_selector(),
@@ -506,11 +499,12 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=[
-                            {"value": "none", "label": "Aucun (Désactivé)"},
-                            {"value": "father", "label": "Papa"},
-                            {"value": "mother", "label": "Maman"},
+                            {"value": "none", "label": "None (Disabled)"},
+                            {"value": "father", "label": "Dad"},
+                            {"value": "mother", "label": "Mom"},
                         ],
                         mode=selector.SelectSelectorMode.DROPDOWN,
+                        translation_key="parental_role",
                     )
                 ),
                 vol.Optional(

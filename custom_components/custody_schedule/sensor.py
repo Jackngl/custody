@@ -41,7 +41,6 @@ class SensorDefinition:
     """Meta description for each logical sensor."""
 
     key: str
-    name: str
     icon: str | None = None
     device_class: SensorDeviceClass | None = None
     state_class: SensorStateClass | None = None
@@ -49,22 +48,20 @@ class SensorDefinition:
 
 
 SENSORS: tuple[SensorDefinition, ...] = (
-    SensorDefinition("next_arrival", "Prochaine arrivée (garde)", "mdi:calendar-clock"),
-    SensorDefinition("next_departure", "Prochain départ (garde)", "mdi:calendar-arrow-right"),
+    SensorDefinition("next_arrival", "mdi:calendar-clock", SensorDeviceClass.TIMESTAMP),
+    SensorDefinition("next_departure", "mdi:calendar-arrow-right", SensorDeviceClass.TIMESTAMP),
     SensorDefinition(
         "days_remaining",
-        "Jours restants (garde)",
         "mdi:clock-end",
         SensorDeviceClass.DURATION,
         SensorStateClass.MEASUREMENT,
         UnitOfTime.DAYS,
     ),
-    SensorDefinition("current_period", "Période actuelle", "mdi:school"),
-    SensorDefinition("next_vacation_name", "Prochaines vacances scolaires", "mdi:calendar-star"),
-    SensorDefinition("next_vacation_start", "Date des prochaines vacances", "mdi:calendar-start"),
+    SensorDefinition("current_period", "mdi:school"),
+    SensorDefinition("next_vacation_name", "mdi:calendar-star"),
+    SensorDefinition("next_vacation_start", "mdi:calendar-start", SensorDeviceClass.TIMESTAMP),
     SensorDefinition(
         "days_until_vacation",
-        "Jours jusqu'aux vacances scolaires",
         "mdi:calendar-clock",
         SensorDeviceClass.DURATION,
         SensorStateClass.MEASUREMENT,
@@ -90,7 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity):
     """Represent a derived sensor from the custody schedule state."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -103,7 +100,7 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         self._definition = definition
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{definition.key}"
-        self._attr_name = f"{child_name} {definition.name}"
+        self._attr_translation_key = definition.key
         self._attr_icon = definition.icon
         self._attr_device_class = definition.device_class
         self._attr_state_class = definition.state_class
@@ -111,21 +108,10 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name=child_name,
-            manufacturer="Antigravity",
+            manufacturer="Custody",
             model="Custody Planning",
-            sw_version=entry.version if hasattr(entry, "version") else "1.3.5",
+            sw_version=entry.version if hasattr(entry, "version") else "1.8.0",
         )
-        # Ajouter des descriptions selon le type de capteur
-        descriptions = {
-            "next_arrival": "Date et heure de la prochaine arrivée de l'enfant (garde classique ou vacances)",
-            "next_departure": "Date et heure du prochain départ de l'enfant (garde classique ou vacances)",
-            "days_remaining": "Nombre de jours restants avant le prochain changement de garde",
-            "current_period": "Période actuelle (garde classique, vacances scolaires, ou aucune)",
-            "next_vacation_name": "Nom des prochaines vacances scolaires à venir",
-            "next_vacation_start": "Date et heure de début des prochaines vacances scolaires",
-            "days_until_vacation": "Nombre de jours restants avant le début des prochaines vacances scolaires",
-        }
-        self._attr_entity_description = descriptions.get(definition.key, "")
         photo = entry.data.get(CONF_PHOTO)
         if photo:
             self._attr_entity_picture = photo
@@ -138,9 +124,9 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             return None
 
         if self._definition.key == "next_arrival":
-            return self._format_datetime(data.next_arrival)
+            return data.next_arrival
         if self._definition.key == "next_departure":
-            return self._format_datetime(data.next_departure)
+            return data.next_departure
         if self._definition.key == "days_remaining":
             return data.days_remaining
         if self._definition.key == "current_period":
@@ -148,7 +134,7 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         if self._definition.key == "next_vacation_name":
             return data.next_vacation_name
         if self._definition.key == "next_vacation_start":
-            return self._format_datetime(data.next_vacation_start)
+            return data.next_vacation_start
         if self._definition.key == "days_until_vacation":
             return data.days_until_vacation
         return None
@@ -164,26 +150,14 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             ATTR_CUSTODY_TYPE: self._entry.data.get("custody_type"),
             ATTR_CURRENT_PERIOD: data.current_period,
             ATTR_VACATION_NAME: data.vacation_name,
-            ATTR_NEXT_ARRIVAL: self._format_datetime(data.next_arrival),
-            ATTR_NEXT_DEPARTURE: self._format_datetime(data.next_departure),
+            ATTR_NEXT_ARRIVAL: data.next_arrival,
+            ATTR_NEXT_DEPARTURE: data.next_departure,
             ATTR_DAYS_REMAINING: data.days_remaining,
             ATTR_NEXT_VACATION_NAME: data.next_vacation_name,
-            ATTR_NEXT_VACATION_START: self._format_datetime(data.next_vacation_start),
-            ATTR_NEXT_VACATION_END: self._format_datetime(data.next_vacation_end),
+            ATTR_NEXT_VACATION_START: data.next_vacation_start,
+            ATTR_NEXT_VACATION_END: data.next_vacation_end,
             ATTR_DAYS_UNTIL_VACATION: data.days_until_vacation,
             ATTR_SCHOOL_HOLIDAYS_RAW: data.school_holidays_raw,
         }
         attrs.update(data.attributes)
         return {key: value for key, value in attrs.items() if value is not None}
-
-    def _format_datetime(self, value: datetime | None) -> str | None:
-        """Return formatted datetime string for UI friendliness."""
-        if value is None:
-            return None
-        localized = dt_util.as_local(value)
-        # Format lisible en français : "27 janvier 2026 à 16:15"
-        months = [
-            "janvier", "février", "mars", "avril", "mai", "juin",
-            "juillet", "août", "septembre", "octobre", "novembre", "décembre"
-        ]
-        return f"{localized.day} {months[localized.month - 1]} {localized.year} à {localized.strftime('%H:%M')}"

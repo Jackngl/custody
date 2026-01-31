@@ -27,6 +27,7 @@
         "title": "Vacances scolaires",
         "description": "Configurer les règles de garde pendant les vacances scolaires. Les vacances priment sur la garde classique. La répartition choisie s'applique automatiquement à toutes les vacances, y compris l'été.",
         "data": {
+          "country": "Pays",
           "zone": "Zone scolaire",
           "vacation_split_mode": "Répartition des moitiés",
           "school_level": "Niveau scolaire"
@@ -201,6 +202,13 @@
       "primary": "Primaire",
       "middle": "Collège",
       "high": "Lycée"
+    },
+    "country": {
+      "FR": "France",
+      "BE": "Belgique",
+      "CH": "Suisse",
+      "LU": "Luxembourg",
+      "CA_QC": "Québec"
     }
   }
 }
