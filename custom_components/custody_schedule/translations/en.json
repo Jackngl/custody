@@ -3,21 +3,21 @@
   "config": {
     "step": {
       "user": {
-        "title": "Child information",
-        "description": "Enter the basic information about the child.",
+        "title": "Child",
+        "description": "Enter the child's first name. For the icon, you can search for 'boy' or 'girl' in the selector.",
         "data": {
-          "child_name": "Child name",
-          "icon": "Icon (mdi search)",
-          "photo": "Photo (URL or /local path)"
+          "child_name": "Child's first name",
+          "icon": "Icon (mdi search, e.g., baby-boy, baby-girl)",
+          "photo": "Photo / Avatar (URL or /local/image.jpg)"
         }
       },
       "custody": {
         "title": "Regular custody (weekends/weeks)",
-        "description": "Configure regular custody outside school holidays. Public holidays (Friday/Monday) automatically extend weekends. The cycle start day does not apply to ISO parity weekends/weeks.",
+        "description": "Configure regular custody outside school holidays. Public holidays (Friday/Monday) automatically extend weekends.",
         "data": {
           "custody_type": "Custody type",
-          "reference_year_custody": "Reference year for regular custody (even/odd)",
-          "start_day": "Cycle start day (weeks only)",
+          "reference_year_custody": "My custody year (parity)",
+          "start_day": "Start day",
           "arrival_time": "Arrival time",
           "departure_time": "Departure time",
           "location": "Exchange location"
@@ -51,7 +51,7 @@
           "vacation_split_mode": "Half split",
           "school_level": "School level",
           "alsace_moselle": "Enable Alsace-Moselle public holidays (Good Friday, St Stephen's)",
-          "parental_role": "My role (Father/Mother)",
+          "parental_role": "My role (Dad/Mom)",
           "auto_parent_days": "Auto-manage Mother's/Father's day"
         }
       },
@@ -143,7 +143,7 @@
   "error": {
     "invalid_local_photo": "Use a URL, media source, or place the file under /config/www so it is available as /local/...",
     "invalid_child_name": "Enter at least one letter or digit (accents will be stripped automatically).",
-    "invalid_icon": "Select an mdi:* icon.",
+    "invalid_icon": "Select an mdi:* icon (e.g., mdi:baby-boy, mdi:baby-girl).",
     "calendar_target_required": "Select a target calendar for synchronization.",
     "end_before_start": "End must be after start.",
     "invalid_weekday": "Select a valid weekday.",
@@ -157,11 +157,11 @@
       },
       "custody": {
         "title": "Regular custody (weekends/weeks)",
-        "description": "Edit regular custody outside school holidays. Public holidays extend weekends. The cycle start day does not apply to ISO parity weekends/weeks.",
+        "description": "Edit regular custody outside school holidays. Public holidays extend weekends.",
         "data": {
           "custody_type": "Custody type",
-          "reference_year_custody": "Reference year for regular custody (even/odd)",
-          "start_day": "Cycle start day (weeks only)"
+          "reference_year_custody": "My custody year (parity)",
+          "start_day": "Start day"
         }
       },
       "custom_pattern": {
@@ -200,7 +200,9 @@
           "zone": "School zone",
           "vacation_split_mode": "Half split",
           "school_level": "School level",
-          "alsace_moselle": "Enable Alsace-Moselle public holidays (Good Friday, St Stephen's)"
+          "alsace_moselle": "Enable Alsace-Moselle public holidays (Good Friday, St Stephen's)",
+          "parental_role": "My role (Dad/Mom)",
+          "auto_parent_days": "Auto-manage Mother's/Father's day"
         }
       },
       "advanced": {
@@ -239,6 +241,20 @@
       "friday": "Friday",
       "saturday": "Saturday",
       "sunday": "Sunday"
+    },
+    "school_level": {
+      "primary": "Primary",
+      "middle": "Middle school",
+      "high": "High school"
+    },
+    "parental_role": {
+      "none": "None (Disabled)",
+      "father": "Dad",
+      "mother": "Mom"
+    },
+    "vacation_split": {
+      "odd_first": "Odd years = 1st half",
+      "odd_second": "Odd years = 2nd half"
     }
   }
 }

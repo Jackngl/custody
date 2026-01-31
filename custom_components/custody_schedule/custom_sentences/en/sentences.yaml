@@ -1,0 +1,12 @@
+language: "en"
+intents:
+  CustodyWhoHasChild:
+    data:
+      - sentences:
+          - "who has {child_name}"
+          - "where is {child_name}"
+          - "who is {child_name} with"
+          - "whose turn is it for {child_name}"
+lists:
+  child_name:
+    wildcard: true

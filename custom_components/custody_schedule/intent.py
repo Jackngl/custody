@@ -25,6 +25,7 @@ class CustodyWhoHasChildHandler(intent.IntentHandler):
         """Handle the intent."""
         slots = self.async_validate_slots(intent_obj.slots)
         child_name_query = slots["child_name"]["value"].lower().strip()
+        language = intent_obj.language
         
         hass = intent_obj.hass
         best_match_coordinator = None
@@ -32,7 +33,6 @@ class CustodyWhoHasChildHandler(intent.IntentHandler):
 
         # Iterate over all registered entries for our domain
         for entry_id, entry_data in hass.data.get(DOMAIN, {}).items():
-            # Check if this is a valid entry data (contains coordinator)
             if not isinstance(entry_data, dict) or "coordinator" not in entry_data:
                 continue
             
@@ -43,7 +43,6 @@ class CustodyWhoHasChildHandler(intent.IntentHandler):
             display_name = (entry.data.get(CONF_CHILD_NAME_DISPLAY) or "").lower()
             slug_name = (entry.data.get(CONF_CHILD_NAME) or "").lower()
             
-            # Simple fuzzy matching: check if query is in the name or the name is in the query
             if child_name_query in display_name or child_name_query in slug_name or display_name in child_name_query:
                 best_match_coordinator = entry_data["coordinator"]
                 match_display_name = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
@@ -52,18 +51,32 @@ class CustodyWhoHasChildHandler(intent.IntentHandler):
         response = intent_obj.create_response()
         
         if not best_match_coordinator:
-            response.async_set_speech(f"Désolé, je ne trouve pas d'enfant nommé {child_name_query} dans votre configuration Custody.")
+            if language == "fr":
+                speech = f"Désolé, je ne trouve pas d'enfant nommé {child_name_query} dans votre configuration Custody."
+            else:
+                speech = f"Sorry, I cannot find a child named {child_name_query} in your Custody configuration."
+            response.async_set_speech(speech)
             return response
             
         data = best_match_coordinator.data
         if not data:
-            response.async_set_speech(f"Je n'ai pas encore pu calculer la position de {match_display_name}.")
+            if language == "fr":
+                speech = f"Je n'ai pas encore pu calculer la position de {match_display_name}."
+            else:
+                speech = f"I haven't been able to calculate {match_display_name}'s position yet."
+            response.async_set_speech(speech)
             return response
             
         if data.is_present:
-            text = f"{match_display_name} est actuellement avec vous."
+            if language == "fr":
+                text = f"{match_display_name} est actuellement avec vous."
+            else:
+                text = f"{match_display_name} is currently with you."
         else:
-            text = f"{match_display_name} est actuellement chez l'autre parent."
+            if language == "fr":
+                text = f"{match_display_name} est actuellement chez l'autre parent."
+            else:
+                text = f"{match_display_name} is currently with the other parent."
             
         response.async_set_speech(text)
         return response
