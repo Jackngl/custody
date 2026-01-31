@@ -1,6 +1,6 @@
 # 👨‍👩‍👧‍👦 Custody (Custody Schedule)
 
-![Version](https://img.shields.io/badge/version-1.5.8-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.9-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Jackngl&repository=custody-v1&category=integration)
