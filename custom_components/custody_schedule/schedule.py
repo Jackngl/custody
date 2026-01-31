@@ -67,6 +67,7 @@ def get_parent_days(year: int, country: str = "FR") -> dict[str, date]:
     """Calculate parent holidays (Mother/Father days).
     
     Currently supports: France (FR).
+    """
     # Father's day: 3rd Sunday of June
     first_june = date(year, 6, 1)
     days_to_first_sunday = (6 - first_june.weekday()) % 7

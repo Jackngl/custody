@@ -1,10 +1,6 @@
 # 👨‍👩‍👧‍👦 Custody (Custody Schedule)
 
-<<<<<<< HEAD
 ![Version](https://img.shields.io/badge/version-1.8.0-blue.svg)
-=======
-![Version](https://img.shields.io/badge/version-1.5.13-blue.svg)
->>>>>>> 86a754c22abe7e83333a1b3e1a509242bd0f1610
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
