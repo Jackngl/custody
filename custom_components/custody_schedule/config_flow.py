@@ -100,14 +100,29 @@ def _zone_selector() -> selector.SelectSelector:
     )
 
 
+def _parental_role_selector() -> selector.SelectSelector:
+    """Return selector for parental role."""
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=[
+                {"value": "none", "label": "none"},
+                {"value": "father", "label": "father"},
+                {"value": "mother", "label": "mother"},
+            ],
+            mode=selector.SelectSelectorMode.DROPDOWN,
+            translation_key="parental_role",
+        )
+    )
+
+
 def _school_level_selector() -> selector.SelectSelector:
     """Return selector for school level."""
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=[
-                {"value": "primary", "label": "Primary"},
-                {"value": "middle", "label": "Middle school"},
-                {"value": "high", "label": "High school"},
+                {"value": "primary", "label": "primary"},
+                {"value": "middle", "label": "middle"},
+                {"value": "high", "label": "high"},
             ],
             mode=selector.SelectSelectorMode.DROPDOWN,
             translation_key="school_level",
@@ -397,37 +412,27 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(
                 CONF_CUSTODY_TYPE, default=custody_type
             ): _custody_type_selector(),
-            # Unified label for reference year
             vol.Required(
                 CONF_REFERENCE_YEAR_CUSTODY, default=reference_year_default
-            ): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[
-                        {"value": "even", "label": "Je l'ai les années paires"},
-                        {"value": "odd", "label": "Je l'ai les années impaires"},
-                    ],
-                    mode=selector.SelectSelectorMode.LIST,
-                )
-            ),
+            ): _reference_year_selector(),
             vol.Required(
                 CONF_ARRIVAL_TIME, default=self._data.get(CONF_ARRIVAL_TIME, "08:00")
             ): selector.TimeSelector(),
             vol.Required(
                 CONF_DEPARTURE_TIME, default=self._data.get(CONF_DEPARTURE_TIME, "19:00")
             ): selector.TimeSelector(),
-            vol.Optional(CONF_LOCATION, default=self._data.get(CONF_LOCATION, "")): cv.string,
+            vol.Optional(CONF_LOCATION, default=self._data.get(CONF_LOCATION, "")): selector.TextSelector(),
         }
-        
+
         # Only show start_day for custody types that use it
         if show_start_day:
             schema_dict[vol.Required(
                 CONF_START_DAY, default=self._data.get(CONF_START_DAY, "monday")
             )] = _start_day_selector()
-        
-        schema = vol.Schema(schema_dict)
+
         return self.async_show_form(
-            step_id="custody", 
-            data_schema=schema,
+            step_id="custody",
+            data_schema=vol.Schema(schema_dict),
             description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")}
         )
 
@@ -468,51 +473,40 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         zone_default = self._data.get(CONF_ZONE, "A")
         vacation_split_default = self._data.get(CONF_VACATION_SPLIT_MODE, "odd_first")
         
-        schema = vol.Schema(
-            {
-                vol.Required(CONF_COUNTRY, default=country_default): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[
-                            {"value": "FR", "label": "France"},
-                            {"value": "BE", "label": "Belgique"},
-                            {"value": "CH", "label": "Suisse"},
-                            {"value": "LU", "label": "Luxembourg"},
-                            {"value": "CA_QC", "label": "Québec"},
-                        ],
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                        translation_key="country",
-                    )
-                ),
-                vol.Required(CONF_ZONE, default=zone_default): _zone_selector(),
-                vol.Optional(
-                    CONF_SCHOOL_LEVEL, default=self._data.get(CONF_SCHOOL_LEVEL, "primary")
-                ): _school_level_selector(),
-                vol.Required(CONF_VACATION_SPLIT_MODE, default=vacation_split_default): _vacation_split_selector(),
-                vol.Required(
-                    CONF_SUMMER_SPLIT_MODE, default=self._data.get(CONF_SUMMER_SPLIT_MODE, "half")
-                ): _summer_split_selector(),
-                vol.Optional(
-                    CONF_ALSACE_MOSELLE, default=self._data.get(CONF_ALSACE_MOSELLE, False)
-                ): selector.BooleanSelector(),
-                vol.Required(
-                    CONF_PARENTAL_ROLE, default=self._data.get(CONF_PARENTAL_ROLE, "none")
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[
-                            {"value": "none", "label": "None (Disabled)"},
-                            {"value": "father", "label": "Dad"},
-                            {"value": "mother", "label": "Mom"},
-                        ],
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                        translation_key="parental_role",
-                    )
-                ),
-                vol.Optional(
-                    CONF_AUTO_PARENT_DAYS, default=self._data.get(CONF_AUTO_PARENT_DAYS, True)
-                ): selector.BooleanSelector(),
-            }
-        )
-        return self.async_show_form(step_id="vacations", data_schema=schema)
+        schema_dict = {
+            vol.Required(CONF_COUNTRY, default=country_default): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        {"value": "FR", "label": "FR"},
+                        {"value": "BE", "label": "BE"},
+                        {"value": "CH", "label": "CH"},
+                        {"value": "LU", "label": "LU"},
+                        {"value": "CA_QC", "label": "CA_QC"},
+                    ],
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                    translation_key="country",
+                )
+            ),
+            vol.Required(CONF_ZONE, default=zone_default): _zone_selector(),
+            vol.Optional(
+                CONF_SCHOOL_LEVEL, default=self._data.get(CONF_SCHOOL_LEVEL, "primary")
+            ): _school_level_selector(),
+            vol.Required(CONF_VACATION_SPLIT_MODE, default=vacation_split_default): _vacation_split_selector(),
+            vol.Required(
+                CONF_SUMMER_SPLIT_MODE, default=self._data.get(CONF_SUMMER_SPLIT_MODE, "half")
+            ): _summer_split_selector(),
+            vol.Optional(
+                CONF_ALSACE_MOSELLE, default=self._data.get(CONF_ALSACE_MOSELLE, False)
+            ): selector.BooleanSelector(),
+            vol.Required(
+                CONF_PARENTAL_ROLE, default=self._data.get(CONF_PARENTAL_ROLE, "none")
+            ): _parental_role_selector(),
+            vol.Optional(
+                CONF_AUTO_PARENT_DAYS, default=self._data.get(CONF_AUTO_PARENT_DAYS, True)
+            ): selector.BooleanSelector(),
+        }
+
+        return self.async_show_form(step_id="vacations", data_schema=vol.Schema(schema_dict))
 
     async def async_step_advanced(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Advanced optional settings (step 4)."""

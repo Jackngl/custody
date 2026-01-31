@@ -260,41 +260,75 @@
   },
   "selector": {
     "custody_type": {
-      "alternate_week": "Semaines alternées (1/1)",
-      "alternate_week_parity": "Semaines alternées",
-      "alternate_weekend": "Week-ends alternés",
-      "two_two_three": "2-2-3",
-      "two_two_five_five": "2-2-5-5",
-      "custom": "Personnalisé"
+      "options": {
+        "alternate_week": "Semaines alternées (1/1)",
+        "alternate_week_parity": "Semaines alternées",
+        "alternate_weekend": "Week-ends alternés",
+        "two_two_three": "2-2-3",
+        "two_two_five_five": "2-2-5-5",
+        "custom": "Personnalisé"
+      }
     },
     "reference_year": {
-      "even": "Paire",
-      "odd": "Impaire"
+      "options": {
+        "even": "Paire",
+        "odd": "Impaire"
+      }
     },
     "start_day": {
-      "monday": "Lundi",
-      "tuesday": "Mardi",
-      "wednesday": "Mercredi",
-      "thursday": "Jeudi",
-      "friday": "Vendredi",
-      "saturday": "Samedi",
-      "sunday": "Dimanche"
+      "options": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
+      }
     },
     "school_level": {
-      "primary": "Primaire",
-      "middle": "Collège",
-      "high": "Lycée"
+      "options": {
+        "primary": "Primaire",
+        "middle": "Collège",
+        "high": "Lycée"
+      }
     },
     "country": {
-      "FR": "France",
-      "BE": "Belgique",
-      "CH": "Suisse",
-      "LU": "Luxembourg",
-      "CA_QC": "Québec"
+      "options": {
+        "FR": "France",
+        "BE": "Belgique",
+        "CH": "Suisse",
+        "LU": "Luxembourg",
+        "CA_QC": "Québec"
+      }
+    },
+    "parental_role": {
+      "options": {
+        "none": "Aucun (Désactivé)",
+        "father": "Papa",
+        "mother": "Maman"
+      }
+    },
+    "vacation_split": {
+      "options": {
+        "odd_first": "Années impaires = 1ère moitié",
+        "odd_second": "Années impaires = 2ème moitié"
+      }
     },
     "summer_split": {
-      "half": "Moitiés (1/2)",
-      "quarter": "Quarts (1/4)"
+      "options": {
+        "half": "Moitiés (1/2)",
+        "quarter": "Quarts (1/4)"
+      }
+    },
+    "zone": {
+      "options": {
+        "A": "Zone A — Besançon, Bordeaux, Clermont-Ferrand, Dijon, Grenoble, Limoges, Lyon, Poitiers",
+        "B": "Zone B — Aix-Marseille, Amiens, Lille, Nancy-Metz, Nantes, Nice, Normandie, Orléans-Tours, Reims, Rennes, Strasbourg",
+        "C": "Zone C — Créteil, Montpellier, Paris, Toulouse, Versailles",
+        "Corse": "Corse",
+        "DOM-TOM": "DOM-TOM / International"
+      }
     }
   }
 }

@@ -259,43 +259,56 @@
   },
   "selector": {
     "custody_type": {
-      "alternate_week": "Alternating weeks (1/1)",
-      "alternate_week_parity": "Alternating weeks",
-      "alternate_weekend": "Alternating weekends",
-      "two_two_three": "2-2-3",
-      "two_two_five_five": "2-2-5-5",
-      "custom": "Custom"
+      "options": {
+        "alternate_week": "Alternate weeks (1/1)",
+        "alternate_week_parity": "Alternate weeks (ISO parity)",
+        "alternate_weekend": "Alternate weekends",
+        "two_two_three": "2-2-3",
+        "two_two_five_five": "2-2-5-5",
+        "custom": "Custom"
+      }
     },
     "reference_year": {
-      "even": "Even",
-      "odd": "Odd"
+      "options": {
+        "even": "Even years",
+        "odd": "Odd years"
+      }
     },
     "start_day": {
-      "monday": "Monday",
-      "tuesday": "Tuesday",
-      "wednesday": "Wednesday",
-      "thursday": "Thursday",
-      "friday": "Friday",
-      "saturday": "Saturday",
-      "sunday": "Sunday"
+      "options": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      }
     },
     "school_level": {
-      "primary": "Primary",
-      "middle": "Middle school",
-      "high": "High school"
-    },
-    "parental_role": {
-      "none": "None (Disabled)",
-      "father": "Dad",
-      "mother": "Mom"
-    },
-    "vacation_split": {
-      "odd_first": "Odd years = 1st half",
-      "odd_second": "Odd years = 2nd half"
+      "options": {
+        "primary": "Primary",
+        "middle": "Middle school",
+        "high": "High school"
+      }
     },
     "country": {
-      "FR": "France",
-      "BE": "Belgium",
+      "options": {
+        "FR": "France",
+        "BE": "Belgium",
+        "CH": "Switzerland",
+        "LU": "Luxembourg",
+        "CA_QC": "Quebec"
+      }
+    },
+    "parental_role": {
+      "options": {
+        "none": "None (Disabled)",
+        "father": "Dad",
+        "mother": "Mom"
+      }
+    },
+    "vacation_split": {
       "CH": "Switzerland",
       "LU": "Luxembourg",
       "CA_QC": "Quebec"
