@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
 
 from . import CustodyScheduleCoordinator
 from .const import CONF_CHILD_NAME, CONF_CHILD_NAME_DISPLAY, CONF_PHOTO, DOMAIN
@@ -52,6 +53,7 @@ class CustodyDeviceTracker(CoordinatorEntity[CustodyComputation], TrackerEntity)
             model="Custody Planning",
             sw_version=entry.version if hasattr(entry, "version") else "1.8.7",
         )
+        self.entity_id = f"device_tracker.{slugify(child_name)}_tracker"
         photo = entry.data.get(CONF_PHOTO)
         if photo:
             self._attr_entity_picture = photo

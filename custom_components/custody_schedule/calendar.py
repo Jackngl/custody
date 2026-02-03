@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.util import dt as dt_util
+from homeassistant.util import dt as dt_util, slugify
 
 from . import CustodyScheduleCoordinator
 from .const import CONF_CHILD_NAME, CONF_CHILD_NAME_DISPLAY, CONF_LOCATION, CONF_PHOTO, DOMAIN
@@ -48,6 +48,7 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
             model="Custody Planning",
             sw_version="1.8.0",
         )
+        self.entity_id = f"calendar.{slugify(child_name)}_calendar"
         photo = entry.data.get(CONF_PHOTO)
         if photo:
             self._attr_entity_picture = photo
