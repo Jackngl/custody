@@ -42,7 +42,6 @@ CONF_DEPARTURE_TIME = "departure_time"
 CONF_SCHOOL_LEVEL = "school_level"
 CONF_LOCATION = "location"
 CONF_NOTES = "notes"
-CONF_COUNTRY = "country"
 CONF_ZONE = "zone"
 CONF_VACATION_SPLIT_MODE = "vacation_split_mode"
 CONF_SUMMER_SPLIT_MODE = "summer_split_mode"
@@ -63,9 +62,6 @@ CONF_CUSTOM_PATTERN = "custom_pattern"
 
 SERVICE_EXPORT_PLANNING_PDF = "export_planning_pdf"
 
-DEFAULT_COUNTRY = "FR"
-COUNTRIES = ["FR", "BE", "CH", "LU", "CA_QC"]
-
 REFERENCE_YEARS = ["even", "odd"]
 VACATION_SPLIT_MODES = ["odd_first", "odd_second"]
 
@@ -77,32 +73,6 @@ FRENCH_ZONES_WITH_CITIES: dict[str, str] = {
     "C": "Zone C — Créteil, Montpellier, Paris, Toulouse, Versailles",
     "Corse": "Corse",
     "DOM-TOM": "DOM-TOM",
-}
-
-# Subdivisions pour les autres pays (OpenHolidays API codes)
-SUBDIVISIONS: dict[str, dict[str, str]] = {
-    "BE": {
-        "BE-BE": "Communauté française",
-        "BE-VLG": "Vlaamse Gemeenschap",
-        "BE-BRU": "Bruxelles",
-    },
-    "CH": {
-        "CH-GE": "Genève",
-        "CH-VD": "Vaud",
-        "CH-VS": "Valais",
-        "CH-NE": "Neuchâtel",
-        "CH-FR": "Fribourg",
-        "CH-JU": "Jura",
-        "CH-BE": "Berne",
-        "CH-ZH": "Zurich",
-        # ... autres cantons peuvent être ajoutés
-    },
-    "LU": {
-        "LU": "Luxembourg (National)",
-    },
-    "CA_QC": {
-        "QC": "Québec (Général)",
-    },
 }
 
 

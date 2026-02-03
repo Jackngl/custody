@@ -3,21 +3,21 @@
   "config": {
     "step": {
       "user": {
-        "title": "Child",
-        "description": "Enter the child's first name. For the icon, you can search for 'boy' or 'girl' in the selector.",
+        "title": "Child information",
+        "description": "Enter the basic information about the child.",
         "data": {
-          "child_name": "Child's first name",
-          "icon": "Icon (mdi search, e.g., baby-boy, baby-girl)",
-          "photo": "Photo / Avatar (URL or /local/image.jpg)"
+          "child_name": "Child name",
+          "icon": "Icon (mdi search)",
+          "photo": "Photo (URL or /local path)"
         }
       },
       "custody": {
         "title": "Regular custody (weekends/weeks)",
-        "description": "Configure regular custody outside school holidays. Public holidays (Friday/Monday) automatically extend weekends.",
+        "description": "Configure regular custody outside school holidays. Public holidays (Friday/Monday) automatically extend weekends. The cycle start day does not apply to ISO parity weekends/weeks.",
         "data": {
           "custody_type": "Custody type",
-          "reference_year_custody": "My custody year (parity)",
-          "start_day": "Start day",
+          "reference_year_custody": "Reference year for regular custody (even/odd)",
+          "start_day": "Cycle start day (weeks only)",
           "arrival_time": "Arrival time",
           "departure_time": "Departure time",
           "location": "Exchange location"
@@ -47,12 +47,11 @@
         "title": "School vacations",
         "description": "Configure custody rules during school holidays. Vacations take priority over regular custody. The chosen split applies automatically to all holidays, including summer.",
         "data": {
-          "country": "Country",
           "zone": "School zone",
           "vacation_split_mode": "Half split",
           "school_level": "School level",
           "alsace_moselle": "Enable Alsace-Moselle public holidays (Good Friday, St Stephen's)",
-          "parental_role": "My role (Dad/Mom)",
+          "parental_role": "My role (Father/Mother)",
           "auto_parent_days": "Auto-manage Mother's/Father's day"
         }
       },
@@ -141,46 +140,10 @@
       }
     }
   },
-  "entity": {
-    "binary_sensor": {
-      "presence": {
-        "name": "Presence"
-      },
-      "calendar": {
-        "name": "Calendar"
-      },
-      "tracker": {
-        "name": "Tracker"
-      }
-    },
-    "sensor": {
-      "next_arrival": {
-        "name": "Next arrival (Custody)"
-      },
-      "next_departure": {
-        "name": "Next departure (Custody)"
-      },
-      "days_remaining": {
-        "name": "Days remaining (Custody)"
-      },
-      "current_period": {
-        "name": "Current period (Custody)"
-      },
-      "next_vacation_name": {
-        "name": "Next vacations (Custody)"
-      },
-      "next_vacation_start": {
-        "name": "Next vacations start (Custody)"
-      },
-      "days_until_vacation": {
-        "name": "Days until vacations (Custody)"
-      }
-    }
-  },
   "error": {
     "invalid_local_photo": "Use a URL, media source, or place the file under /config/www so it is available as /local/...",
     "invalid_child_name": "Enter at least one letter or digit (accents will be stripped automatically).",
-    "invalid_icon": "Select an mdi:* icon (e.g., mdi:baby-boy, mdi:baby-girl).",
+    "invalid_icon": "Select an mdi:* icon.",
     "calendar_target_required": "Select a target calendar for synchronization.",
     "end_before_start": "End must be after start.",
     "invalid_weekday": "Select a valid weekday.",
@@ -194,11 +157,11 @@
       },
       "custody": {
         "title": "Regular custody (weekends/weeks)",
-        "description": "Edit regular custody outside school holidays. Public holidays extend weekends.",
+        "description": "Edit regular custody outside school holidays. Public holidays extend weekends. The cycle start day does not apply to ISO parity weekends/weeks.",
         "data": {
           "custody_type": "Custody type",
-          "reference_year_custody": "My custody year (parity)",
-          "start_day": "Start day"
+          "reference_year_custody": "Reference year for regular custody (even/odd)",
+          "start_day": "Cycle start day (weeks only)"
         }
       },
       "custom_pattern": {
@@ -237,9 +200,7 @@
           "zone": "School zone",
           "vacation_split_mode": "Half split",
           "school_level": "School level",
-          "alsace_moselle": "Enable Alsace-Moselle public holidays (Good Friday, St Stephen's)",
-          "parental_role": "My role (Dad/Mom)",
-          "auto_parent_days": "Auto-manage Mother's/Father's day"
+          "alsace_moselle": "Enable Alsace-Moselle public holidays (Good Friday, St Stephen's)"
         }
       },
       "advanced": {
@@ -259,88 +220,25 @@
   },
   "selector": {
     "custody_type": {
-      "options": {
-        "alternate_week": "Alternate weeks (1/1)",
-        "alternate_week_parity": "Alternate weeks (ISO parity)",
-        "alternate_weekend": "Alternate weekends",
-        "two_two_three": "2-2-3",
-        "two_two_five_five": "2-2-5-5",
-        "custom": "Custom"
-      }
+      "alternate_week": "Alternating weeks (1/1)",
+      "alternate_week_parity": "Alternating weeks",
+      "alternate_weekend": "Alternating weekends",
+      "two_two_three": "2-2-3",
+      "two_two_five_five": "2-2-5-5",
+      "custom": "Custom"
     },
     "reference_year": {
-      "options": {
-        "even": "Even years",
-        "odd": "Odd years"
-      }
+      "even": "Even",
+      "odd": "Odd"
     },
     "start_day": {
-      "options": {
-        "monday": "Monday",
-        "tuesday": "Tuesday",
-        "wednesday": "Wednesday",
-        "thursday": "Thursday",
-        "friday": "Friday",
-        "saturday": "Saturday",
-        "sunday": "Sunday"
-      }
-    },
-    "school_level": {
-      "options": {
-        "primary": "Primary",
-        "middle": "Middle school",
-        "high": "High school"
-      }
-    },
-    "country": {
-      "options": {
-        "FR": "France",
-        "BE": "Belgium",
-        "CH": "Switzerland",
-        "LU": "Luxembourg",
-        "CA_QC": "Quebec"
-      }
-    },
-    "parental_role": {
-      "options": {
-        "none": "None (Disabled)",
-        "father": "Dad",
-        "mother": "Mom"
-      }
-    },
-    "vacation_split": {
-      "options": {
-        "odd_first": "Odd years = 1st half",
-        "odd_second": "Odd years = 2nd half"
-      }
-    },
-    "summer_split": {
-      "options": {
-        "half": "Halves (1/2)",
-        "quarter": "Quarters (1/4)"
-      }
-    },
-    "zone": {
-      "options": {
-        "A": "Zone A — Besançon, Bordeaux, Clermont-Ferrand, Dijon, Grenoble, Limoges, Lyon, Poitiers",
-        "B": "Zone B — Aix-Marseille, Amiens, Lille, Nancy-Metz, Nantes, Nice, Normandie, Orléans-Tours, Reims, Rennes, Strasbourg",
-        "C": "Zone C — Créteil, Montpellier, Paris, Toulouse, Versailles",
-        "Corse": "Corsica",
-        "DOM-TOM": "DOM-TOM / International",
-        "BE-BE": "Belgium — French Community",
-        "BE-VLG": "Belgium — Flemish Community",
-        "BE-BRU": "Belgium — Brussels",
-        "CH-GE": "Switzerland — Geneva",
-        "CH-VD": "Switzerland — Vaud",
-        "CH-VS": "Switzerland — Valais",
-        "CH-NE": "Switzerland — Neuchâtel",
-        "CH-FR": "Switzerland — Fribourg",
-        "CH-JU": "Switzerland — Jura",
-        "CH-BE": "Switzerland — Berne",
-        "CH-ZH": "Switzerland — Zurich",
-        "LU": "Luxembourg (National)",
-        "QC": "Quebec (General)"
-      }
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
     }
   }
 }

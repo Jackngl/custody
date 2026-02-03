@@ -50,7 +50,6 @@ from .const import (
 )
 from .schedule import CustodyComputation, CustodyScheduleManager
 from .school_holidays import SchoolHolidayClient
-from .intent import async_setup_intents
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -58,7 +57,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data.setdefault(DOMAIN, {})
     if not hass.data[DOMAIN].get("services_registered"):
         _register_services(hass)
-        await async_setup_intents(hass)
         hass.data[DOMAIN]["services_registered"] = True
     return True
 
@@ -1388,7 +1386,6 @@ def _register_services(hass: HomeAssistant) -> None:
     async def _async_handle_test_api(call: ServiceCall) -> None:
         """Test the holiday API connection."""
         entry_id = call.data.get("entry_id")
-        country = call.data.get("country")
         zone = call.data.get("zone", "A")
         year = call.data.get("year")
         
@@ -1410,12 +1407,7 @@ def _register_services(hass: HomeAssistant) -> None:
         else:
             holidays = SchoolHolidayClient(hass, api_url)
         
-        if entry_id and not country:
-            country = config.get(CONF_COUNTRY, DEFAULT_COUNTRY)
-        if not country:
-            country = DEFAULT_COUNTRY
-
-        result = await holidays.async_test_connection(country, zone, year)
+        result = await holidays.async_test_connection(zone, year)
         
         # Log the result
         if result["success"]:
@@ -1438,7 +1430,6 @@ def _register_services(hass: HomeAssistant) -> None:
         schema=vol.Schema(
             {
                 vol.Optional("entry_id"): vol.All(cv.string, vol.Length(min=1)),
-                vol.Optional("country"): cv.string,
                 vol.Optional("zone", default="A"): cv.string,
                 vol.Optional("year"): cv.string,
             }

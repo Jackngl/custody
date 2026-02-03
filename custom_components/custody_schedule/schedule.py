@@ -29,44 +29,47 @@ def _easter_date(year: int) -> date:
     return date(year, month, day)
 
 
-def get_public_holidays(year: int, country: str = "FR", include_alsace_moselle: bool = False) -> set[date]:
-    """Return set of public holidays for a given year and country.
+def get_french_holidays(year: int, include_alsace_moselle: bool = False) -> set[date]:
+    """Return set of French public holidays for a given year.
     
-    Currently supports: France (FR).
+    Calculates all official French public holidays (jours fériés).
+    Note: Holidays that fall during school vacations are automatically excluded
+    from custody extensions (vacations have priority).
     """
     holidays = set()
     
-    if country == "FR":
-        # Fixed holidays
-        holidays.add(date(year, 1, 1))    # New Year
-        holidays.add(date(year, 5, 1))    # Labor Day
-        holidays.add(date(year, 5, 8))    # Victory 1945
-        holidays.add(date(year, 7, 14))   # National Day
-        holidays.add(date(year, 8, 15))   # Assumption
-        holidays.add(date(year, 11, 1))   # All Saints
-        holidays.add(date(year, 11, 11))  # Armistice
-        holidays.add(date(year, 12, 25))  # Christmas
-        
-        # Alsace-Moselle specific
-        if include_alsace_moselle:
-            holidays.add(date(year, 12, 26))
-        
-        # Variable
-        easter = _easter_date(year)
-        holidays.add(easter + timedelta(days=1))   # Easter Monday
-        holidays.add(easter + timedelta(days=39))  # Ascension
-        holidays.add(easter + timedelta(days=50))  # Pentecost Monday
-        
-        if include_alsace_moselle:
-            holidays.add(easter - timedelta(days=2))  # Good Friday
-            
+    # Fixed holidays
+    holidays.add(date(year, 1, 1))    # Jour de l'An
+    holidays.add(date(year, 5, 1))    # Fête du Travail
+    holidays.add(date(year, 5, 8))    # Victoire 1945
+    holidays.add(date(year, 7, 14))   # Fête Nationale
+    holidays.add(date(year, 8, 15))   # Assomption
+    holidays.add(date(year, 11, 1))   # Toussaint
+    holidays.add(date(year, 11, 11))  # Armistice
+    holidays.add(date(year, 12, 25))  # Noël
+    
+    # Alsace-Moselle specific fixed holidays
+    if include_alsace_moselle:
+        holidays.add(date(year, 12, 26))  # Saint-Étienne
+    
+    # Variable holidays based on Easter
+    easter = _easter_date(year)
+    holidays.add(easter + timedelta(days=1))   # Lundi de Pâques
+    holidays.add(easter + timedelta(days=39))  # Jeudi de l'Ascension
+    holidays.add(easter + timedelta(days=50))  # Lundi de Pentecôte
+    
+    # Alsace-Moselle specific variable holidays
+    if include_alsace_moselle:
+        holidays.add(easter - timedelta(days=2))  # Vendredi Saint
+    
     return holidays
 
 
-def get_parent_days(year: int, country: str = "FR") -> dict[str, date]:
-    """Calculate parent holidays (Mother/Father days).
+def get_parent_days(year: int) -> dict[str, date]:
+    """Calculate variable dates for French parent holidays (Mother/Father days).
     
-    Currently supports: France (FR).
+    Mother's Day: Last Sunday of May (moved to 1st Sunday of June if Pentecost).
+    Father's Day: 3rd Sunday of June.
     """
     # Father's day: 3rd Sunday of June
     first_june = date(year, 6, 1)
@@ -127,10 +130,7 @@ from .const import (
     CONF_SUMMER_SPLIT_MODE,
     CONF_VACATION_SPLIT_MODE,
     CONF_ZONE,
-    CONF_COUNTRY,
     CUSTODY_TYPES,
-    DEFAULT_COUNTRY,
-    LOGGER,
 )
 from .school_holidays import SchoolHolidayClient
 
@@ -412,31 +412,30 @@ class CustodyScheduleManager:
             
         windows = []
         # Calculate for current and next year to ensure upcoming ones are visible
-        country = self._config.get(CONF_COUNTRY, "FR")
         for year in (now.year, now.year + 1):
-            dates = get_parent_days(year, country)
+            dates = get_parent_days(year)
             
             # Mother's Day
-            m_day = dates.get("mother")
-            if m_day:
-                m_start = dt_util.as_local(datetime.combine(m_day, time(0, 0)))
-                m_end = dt_util.as_local(datetime.combine(m_day, time(23, 59, 59)))
-                
-                if role == "mother":
-                    windows.append(CustodyWindow(m_start, m_end, "Mother's Day", "special"))
-                elif role == "father":
-                    windows.append(CustodyWindow(m_start, m_end, "Mother's Day (Secondary parent)", "vacation_filter"))
+            m_day = dates["mother"]
+            m_start = dt_util.as_local(datetime.combine(m_day, time(0, 0)))
+            m_end = dt_util.as_local(datetime.combine(m_day, time(23, 59, 59)))
+            
+            if role == "mother":
+                # User is Mother -> Force Presence
+                windows.append(CustodyWindow(m_start, m_end, "Fête des mères", "special"))
+            elif role == "father":
+                # User is Father -> Force absence during other parent's day
+                windows.append(CustodyWindow(m_start, m_end, "Fête des mères (Chez l'autre parent)", "vacation_filter"))
 
             # Father's Day
-            f_day = dates.get("father")
-            if f_day:
-                f_start = dt_util.as_local(datetime.combine(f_day, time(0, 0)))
-                f_end = dt_util.as_local(datetime.combine(f_day, time(23, 59, 59)))
-                
-                if role == "father":
-                    windows.append(CustodyWindow(f_start, f_end, "Father's Day", "special"))
-                elif role == "mother":
-                    windows.append(CustodyWindow(f_start, f_end, "Father's Day (Secondary parent)", "vacation_filter"))
+            f_day = dates["father"]
+            f_start = dt_util.as_local(datetime.combine(f_day, time(0, 0)))
+            f_end = dt_util.as_local(datetime.combine(f_day, time(23, 59, 59)))
+            
+            if role == "father":
+                windows.append(CustodyWindow(f_start, f_end, "Fête des pères", "special"))
+            elif role == "mother":
+                windows.append(CustodyWindow(f_start, f_end, "Fête des pères (Chez l'autre parent)", "vacation_filter"))
                 
         return windows
 
@@ -473,7 +472,7 @@ class CustodyScheduleManager:
 
             days_ahead = (weekday - current.weekday()) % 7
             occ_date = current + timedelta(days=days_ahead)
-            label = item.get("label") or "Recurring exception"
+            label = item.get("label") or "Exception récurrente"
 
             while occ_date <= range_end:
                 start_dt = datetime.combine(occ_date, start_time, tzinfo=self._tz)
@@ -574,10 +573,9 @@ class CustodyScheduleManager:
             windows: list[CustodyWindow] = []
             pointer = self._reference_start(now, custody_type)
             
-            # Get public holidays for current and next year
-            country = self._config.get(CONF_COUNTRY, "FR")
+            # Get French holidays for current and next year
             alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
-            holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(now.year + 1, country, alsace_moselle)
+            holidays = get_french_holidays(now.year, alsace_moselle) | get_french_holidays(now.year + 1, alsace_moselle)
             
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
             reference_year = self._config.get(
@@ -627,14 +625,14 @@ class CustodyScheduleManager:
                         monday_is_holiday = monday.date() in holidays
                         
                         if friday_is_holiday:
-                            # Holiday on Friday: start Thursday instead
+                            # Vendredi férié: start Thursday instead
                             window_start = thursday
-                            label_suffix = " + Holiday"
+                            label_suffix = " + Vendredi férié"
                         
                         if monday_is_holiday:
-                            # Holiday on Monday: extend to Monday
+                            # Lundi férié: extend to Monday
                             window_end = monday
-                            label_suffix = " + Holiday" if not label_suffix else " + Long Weekend"
+                            label_suffix = " + Lundi férié" if not label_suffix else " + Pont"
                     
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
@@ -654,10 +652,9 @@ class CustodyScheduleManager:
             windows: list[CustodyWindow] = []
             pointer = self._reference_start(now, custody_type)
             
-            # Get public holidays for current and next year
-            country = self._config.get(CONF_COUNTRY, "FR")
+            # Get French holidays for current and next year
             alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
-            holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(now.year + 1, country, alsace_moselle)
+            holidays = get_french_holidays(now.year, alsace_moselle) | get_french_holidays(now.year + 1, alsace_moselle)
             
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
             reference_year = self._config.get(
@@ -708,14 +705,14 @@ class CustodyScheduleManager:
                         friday_is_holiday = friday.date() in holidays
                         
                         if monday_is_holiday:
-                            # Holiday on Monday: start previous Friday instead
+                            # Lundi férié: start previous Friday instead
                             window_start = previous_friday
-                            label_suffix = " + Holiday"
+                            label_suffix = " + Lundi férié"
                         
                         if friday_is_holiday:
-                            # Holiday on Friday: extend to next Monday
+                            # Vendredi férié: extend to next Monday
                             window_end = next_monday
-                            label_suffix = " + Holiday" if not label_suffix else " + Long Weekend"
+                            label_suffix = " + Vendredi férié" if not label_suffix else " + Pont"
                     
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
@@ -766,7 +763,7 @@ class CustodyScheduleManager:
                         CustodyWindow(
                             start=self._apply_time(segment_start, self._arrival_time),
                             end=self._apply_time(segment_end, self._departure_time),
-                            label=f"Custody - {type_label}",
+                            label=f"Garde - {type_label}",
                             source="pattern",
                         )
                     )
@@ -780,9 +777,9 @@ class CustodyScheduleManager:
         zone = self._config.get(CONF_ZONE)
         if not zone:
             return []
-        country = self._config.get(CONF_COUNTRY, DEFAULT_COUNTRY)
+        
         # Fetch holidays without year restriction to get current and next school years
-        holidays = await self._holidays.async_list(country, zone)
+        holidays = await self._holidays.async_list(zone)
         windows: list[CustodyWindow] = []
         # vacation_rule is now automatic based on year parity
         # For all holidays (including summer), use automatic parity logic: 
@@ -801,7 +798,7 @@ class CustodyScheduleManager:
                 CustodyWindow(
                     start=start,
                     end=end,
-                    label=f"{holiday.name} - Full period (Filter)",
+                    label=f"{holiday.name} - Période complète (filtrage)",
                     source="vacation_filter",
                 )
             )
@@ -828,7 +825,7 @@ class CustodyScheduleManager:
                 continue
 
             # Handle summer quarter-split if enabled
-            is_summer = any(kw in holiday.name.lower() for kw in ["été", "summer"]) or holiday.start.month in (7, 8)
+            is_summer = "été" in holiday.name.lower() or holiday.start.month in (7, 8)
             if is_summer and summer_mode == "quarter":
                 # Split the whole summer duration [start, end] into 4 equal segments
                 total_duration = end - start
@@ -1090,9 +1087,8 @@ class CustodyScheduleManager:
         if not zone:
             return "school", None
 
-        country = self._config.get(CONF_COUNTRY, DEFAULT_COUNTRY)
         # Fetch holidays without year restriction to get current and next school years
-        holidays = await self._holidays.async_list(country, zone)
+        holidays = await self._holidays.async_list(zone)
         for holiday in holidays:
             effective_start, effective_end, _mid = self._effective_holiday_bounds(holiday)
             if effective_start <= now <= effective_end:
@@ -1113,15 +1109,16 @@ class CustodyScheduleManager:
         Returned start/end correspond to the next *custody segment* during that vacation
         (e.g., if rule is "second_half", start is the midpoint, not the vacation start).
         """
+        from .const import LOGGER
+        
         zone = self._config.get(CONF_ZONE)
         if not zone:
             LOGGER.warning("No zone configured, cannot fetch school holidays")
             return None, None, None, None, []
 
-        country = self._config.get(CONF_COUNTRY, DEFAULT_COUNTRY)
         # Fetch holidays without year restriction to get current and next school years
-        LOGGER.debug("Fetching school holidays for country=%s, zone=%s", country, zone)
-        holidays = await self._holidays.async_list(country, zone)
+        LOGGER.debug("Fetching school holidays for zone=%s", zone)
+        holidays = await self._holidays.async_list(zone)
         LOGGER.debug("Retrieved %d holidays from API", len(holidays))
         
         if not holidays:
@@ -1290,6 +1287,7 @@ class CustodyScheduleManager:
         Returns:
             Adjusted start datetime
         """
+        from .const import LOGGER
         
         if school_level == "primary":
             # Primary: Friday afternoon at departure time

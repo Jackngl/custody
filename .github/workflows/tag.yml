@@ -45,29 +45,19 @@ jobs:
             ls -la custom_components/custody_schedule/ || echo "Directory does not exist"
             exit 1
           fi
-
-          # Check if manifest was manually modified in the last commit
-          # We use git show to see files changed in HEAD
-          if git show --name-only --format="" HEAD | grep -q "custom_components/custody_schedule/manifest.json"; then
-            echo "ℹ️ Manifest file was manually modified in this commit."
-            echo "Skipping auto-increment to respect the manual version."
-            
-            # Extract current version to ensure README badge is synced
-            CURRENT_VERSION=$(python3 -c "import json, pathlib; print(json.loads(pathlib.Path('custom_components/custody_schedule/manifest.json').read_text(encoding='utf-8')).get('version', ''))")
-            echo "Detected manual version: $CURRENT_VERSION"
-            
-            echo "Syncing README badge (if needed)..."
-            python3 scripts/update_version.py "$CURRENT_VERSION"
-          else
-            echo "ℹ️ Manifest not modified. Running auto-increment..."
-            python3 scripts/update_version.py
-          fi
-
-          echo ""
-          echo "Final manifest:"
+          echo "Current manifest:"
           cat custom_components/custody_schedule/manifest.json
           echo ""
-          echo "Final README badge (first 3 lines):"
+          echo "Current README badge (first 3 lines):"
+          head -n 3 README.md || echo "README.md not found"
+          echo ""
+          echo "Running auto-increment script..."
+          python3 scripts/update_version.py
+          echo ""
+          echo "Updated manifest:"
+          cat custom_components/custody_schedule/manifest.json
+          echo ""
+          echo "Updated README badge (first 3 lines):"
           head -n 3 README.md || echo "README.md not found"
           echo "::endgroup::"
 
