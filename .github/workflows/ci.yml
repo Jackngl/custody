@@ -8,8 +8,8 @@ on:
 
 jobs:
   lint:
+    name: Lint & Code Quality
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,90 +20,95 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Install tooling
+      - name: Install dependencies
         run: |
-          echo "::group::Installing linting tools"
           python -m pip install --upgrade pip
-          pip install flake8 black isort
-          echo "Installed versions:"
-          flake8 --version || echo "Flake8 not available"
-          black --version || echo "Black not available"
-          isort --version || echo "isort not available"
-          echo "::endgroup::"
+          pip install -r requirements_test.txt
 
-      - name: Lint with flake8
-        continue-on-error: true
+      - name: Run Black (Formatting)
         run: |
-          echo "::group::Running flake8"
-          set +e
-          flake8 custom_components/custody_schedule --count --select=E9,F63,F7,F82 --show-source --statistics
-          FLAKE8_EXIT=$?
-          if [ $FLAKE8_EXIT -eq 0 ]; then
-            echo "✓ Flake8: No critical errors found"
-          else
-            echo "⚠ Flake8 found issues (non-blocking, exit code: $FLAKE8_EXIT)"
-          fi
-          set -e
-          echo "::endgroup::"
+          black --check custom_components/custody_schedule tests
 
-      - name: Check formatting with black
-        continue-on-error: true
+      - name: Run Isort (Import sorting)
         run: |
-          echo "::group::Checking formatting with black"
-          set +e
-          black --check custom_components/custody_schedule
-          BLACK_EXIT=$?
-          if [ $BLACK_EXIT -eq 0 ]; then
-            echo "✓ Black: Code is properly formatted"
-          else
-            echo "⚠ Black formatting issues found (non-blocking, exit code: $BLACK_EXIT)"
-          fi
-          set -e
-          echo "::endgroup::"
+          isort --check-only custom_components/custody_schedule tests
 
-      - name: Check import order with isort
-        continue-on-error: true
+      - name: Run Flake8 (Linting)
         run: |
-          echo "::group::Checking import order with isort"
-          set +e
-          isort --check-only custom_components/custody_schedule
-          ISORT_EXIT=$?
-          if [ $ISORT_EXIT -eq 0 ]; then
-            echo "✓ isort: Imports are properly ordered"
-          else
-            echo "⚠ isort found issues (non-blocking, exit code: $ISORT_EXIT)"
-          fi
-          set -e
-          echo "::endgroup::"
+          # F401: Module imported but not used (ignored in __init__.py often, but good to check)
+          # E501: Line too long (handled by black mostly, but flake8 is strict)
+          # W503: Line break before binary operator (conflicts with black)
+          flake8 custom_components/custody_schedule tests --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 custom_components/custody_schedule tests --count --max-complexity=10 --max-line-length=127 --statistics
 
-  validate:
+      - name: Run YamlLint
+        run: |
+          yamllint .
+
+  security:
+    name: Security Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Debug HACS validation
-        run: |
-          echo "::group::HACS Validation Info"
-          echo "Repository: ${{ github.repository }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "::endgroup::"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
 
-      - name: Validate with HACS
+      - name: Install dependencies
+        run: |
+          pip install bandit
+
+      - name: Run Bandit (Security)
+        run: |
+          bandit -r custom_components/custody_schedule
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements_test.txt
+
+      - name: Run Pytest
+        run: |
+          pytest tests
+
+  hassfest:
+    name: Hassfest Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Hassfest
+        uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run HACS Validation
         uses: hacs/action@main
         with:
           category: integration
           ignore: brands
-        continue-on-error: false
-
-      - name: HACS Validation Result
-        if: always()
-        run: |
-          echo "::group::HACS Validation Result"
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "✓ HACS validation passed"
-          else
-            echo "✗ HACS validation failed"
-            exit 1
-          fi
-          echo "::endgroup::"
