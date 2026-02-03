@@ -131,22 +131,6 @@ class FranceEducationProvider(BaseHolidayProvider):
             except Exception as err:
                 LOGGER.error("Error fetching holidays from France provider: %s", err)
 
-        # Zone C override fix
-        if normalized_zone == "C":
-            winter_2026_start = dt_util.parse_datetime("2026-02-21T00:00:00+01:00")
-            winter_2026_end = dt_util.parse_datetime("2026-03-09T23:59:59+01:00")
-            if winter_2026_start and winter_2026_end:
-                winter_2026_start = dt_util.as_local(winter_2026_start)
-                winter_2026_end = dt_util.as_local(winter_2026_end)
-                has_winter_2026 = False
-                for h in all_holidays:
-                    if "hiver" in h.name.lower() and h.start.year == 2026 and h.start.month == 2:
-                        has_winter_2026 = True
-                        h.start, h.end = winter_2026_start, winter_2026_end
-                        break
-                if not has_winter_2026:
-                    all_holidays.append(SchoolHoliday("Vacances d'Hiver", zone, winter_2026_start, winter_2026_end))
-
         return sorted(all_holidays, key=lambda h: (h.start, h.end))
 
 
