@@ -180,7 +180,6 @@
   "error": {
     "invalid_local_photo": "Use a URL, media source, or place the file under /config/www so it is available as /local/...",
     "invalid_child_name": "Enter at least one letter or digit (accents will be stripped automatically).",
-    "invalid_icon": "Select an mdi:* icon (e.g., mdi:baby-boy, mdi:baby-girl).",
     "calendar_target_required": "Select a target calendar for synchronization.",
     "end_before_start": "End must be after start.",
     "invalid_weekday": "Select a valid weekday.",
@@ -292,15 +291,6 @@
         "high": "High school"
       }
     },
-    "country": {
-      "options": {
-        "FR": "France",
-        "BE": "Belgium",
-        "CH": "Switzerland",
-        "LU": "Luxembourg",
-        "CA_QC": "Quebec"
-      }
-    },
     "parental_role": {
       "options": {
         "none": "None (Disabled)",
@@ -318,28 +308,6 @@
       "options": {
         "half": "Halves (1/2)",
         "quarter": "Quarters (1/4)"
-      }
-    },
-    "zone": {
-      "options": {
-        "A": "Zone A — Besançon, Bordeaux, Clermont-Ferrand, Dijon, Grenoble, Limoges, Lyon, Poitiers",
-        "B": "Zone B — Aix-Marseille, Amiens, Lille, Nancy-Metz, Nantes, Nice, Normandie, Orléans-Tours, Reims, Rennes, Strasbourg",
-        "C": "Zone C — Créteil, Montpellier, Paris, Toulouse, Versailles",
-        "Corse": "Corsica",
-        "DOM-TOM": "DOM-TOM / International",
-        "BE-BE": "Belgium — French Community",
-        "BE-VLG": "Belgium — Flemish Community",
-        "BE-BRU": "Belgium — Brussels",
-        "CH-GE": "Switzerland — Geneva",
-        "CH-VD": "Switzerland — Vaud",
-        "CH-VS": "Switzerland — Valais",
-        "CH-NE": "Switzerland — Neuchâtel",
-        "CH-FR": "Switzerland — Fribourg",
-        "CH-JU": "Switzerland — Jura",
-        "CH-BE": "Switzerland — Berne",
-        "CH-ZH": "Switzerland — Zurich",
-        "LU": "Luxembourg (National)",
-        "QC": "Quebec (General)"
       }
     }
   }

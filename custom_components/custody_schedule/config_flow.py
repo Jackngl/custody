@@ -111,7 +111,6 @@ def _zone_selector(country: str | None = None) -> selector.SelectSelector:
         selector.SelectSelectorConfig(
             options=options_list,
             mode=selector.SelectSelectorMode.DROPDOWN,
-            translation_key="zone",
         )
     )
 
@@ -493,14 +492,13 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_COUNTRY, default=country_default): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=[
-                        {"value": "FR", "label": "FR"},
-                        {"value": "BE", "label": "BE"},
-                        {"value": "CH", "label": "CH"},
-                        {"value": "LU", "label": "LU"},
-                        {"value": "CA_QC", "label": "CA_QC"},
+                        {"value": "FR", "label": "France (FR)"},
+                        {"value": "BE", "label": "Belgique (BE)"},
+                        {"value": "CH", "label": "Suisse (CH)"},
+                        {"value": "LU", "label": "Luxembourg (LU)"},
+                        {"value": "CA_QC", "label": "Québec (CA_QC)"},
                     ],
                     mode=selector.SelectSelectorMode.DROPDOWN,
-                    translation_key="country",
                 )
             ),
             vol.Required(CONF_ZONE, default=zone_default): _zone_selector(country_default),
