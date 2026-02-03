@@ -1,7 +1,7 @@
 {
   "domain": "custody_schedule",
   "name": "Custody",
-  "version": "1.8.11",
+  "version": "1.8.12",
   "after_dependencies": [
     "calendar"
   ],
