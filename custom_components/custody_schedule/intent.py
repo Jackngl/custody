@@ -1,4 +1,5 @@
 """Intents for the Custody Schedule integration."""
+
 from __future__ import annotations
 
 import voluptuous as vol

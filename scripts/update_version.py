@@ -19,7 +19,7 @@ def increment_version(version: str) -> str:
     match = re.match(r"^(\d+)\.(\d+)\.(\d+)$", version)
     if not match:
         raise ValueError(f"Invalid version format: {version}. Expected format: X.Y.Z")
-    
+
     major, minor, patch = map(int, match.groups())
     new_patch = patch + 1
     return f"{major}.{minor}.{new_patch}"
@@ -38,7 +38,7 @@ def get_current_version() -> str:
     version = manifest.get("version")
     if not version:
         raise ValueError("Version field not found in manifest")
-    
+
     return version
 
 
@@ -70,10 +70,10 @@ def update_version(version: str) -> None:
         try:
             readme_content = README_PATH.read_text(encoding="utf-8")
             # Pattern to match the version badge: ![Version](https://img.shields.io/badge/version-X.Y.Z-blue.svg)
-            pattern = r'!\[Version\]\(https://img\.shields\.io/badge/version-[\d.]+-blue\.svg\)'
-            replacement = f'![Version](https://img.shields.io/badge/version-{version}-blue.svg)'
+            pattern = r"!\[Version\]\(https://img\.shields\.io/badge/version-[\d.]+-blue\.svg\)"
+            replacement = f"![Version](https://img.shields.io/badge/version-{version}-blue.svg)"
             new_content = re.sub(pattern, replacement, readme_content)
-            
+
             if new_content != readme_content:
                 README_PATH.write_text(new_content, encoding="utf-8")
                 print(f"Version badge updated in README.md: {old_version} -> {version}")

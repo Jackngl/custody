@@ -146,42 +146,6 @@
       "calendar_target_required": "Select a target calendar for synchronization."
     }
   },
-  "entity": {
-    "binary_sensor": {
-      "presence": {
-        "name": "Presence"
-      },
-      "calendar": {
-        "name": "Calendar"
-      },
-      "tracker": {
-        "name": "Tracker"
-      }
-    },
-    "sensor": {
-      "next_arrival": {
-        "name": "Next arrival (Custody)"
-      },
-      "next_departure": {
-        "name": "Next departure (Custody)"
-      },
-      "days_remaining": {
-        "name": "Days remaining (Custody)"
-      },
-      "current_period": {
-        "name": "Current period (Custody)"
-      },
-      "next_vacation_name": {
-        "name": "Next vacations (Custody)"
-      },
-      "next_vacation_start": {
-        "name": "Next vacations start (Custody)"
-      },
-      "days_until_vacation": {
-        "name": "Days until vacations (Custody)"
-      }
-    }
-  },
   "options": {
     "step": {
       "init": {
@@ -257,6 +221,42 @@
       "end_before_start": "End must be after start.",
       "invalid_weekday": "Select a valid weekday.",
       "no_exceptions": "No exceptions available."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "presence": {
+        "name": "Presence"
+      },
+      "calendar": {
+        "name": "Calendar"
+      },
+      "tracker": {
+        "name": "Tracker"
+      }
+    },
+    "sensor": {
+      "next_arrival": {
+        "name": "Next arrival (Custody)"
+      },
+      "next_departure": {
+        "name": "Next departure (Custody)"
+      },
+      "days_remaining": {
+        "name": "Days remaining (Custody)"
+      },
+      "current_period": {
+        "name": "Current period (Custody)"
+      },
+      "next_vacation_name": {
+        "name": "Next vacations (Custody)"
+      },
+      "next_vacation_start": {
+        "name": "Next vacations start (Custody)"
+      },
+      "days_until_vacation": {
+        "name": "Days until vacations (Custody)"
+      }
     }
   },
   "selector": {
