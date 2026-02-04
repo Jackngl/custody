@@ -32,21 +32,21 @@ jobs:
         id: validate
         run: |
           echo "::group::Checking if push would be fast-forward"
-          
+
           # Check if main can be fast-forwarded
           BEHIND=$(git rev-list --count main..official/main 2>/dev/null || echo "0")
           AHEAD=$(git rev-list --count official/main..main 2>/dev/null || echo "0")
-          
+
           echo "Commits behind official: $BEHIND"
           echo "Commits ahead of official: $AHEAD"
-          
+
           if [ "$BEHIND" -gt 0 ]; then
             echo "::error::Local branch is behind official/main by $BEHIND commits"
             echo "::error::Cannot push safely. Please pull latest changes first."
             echo "diverged=true" >> $GITHUB_OUTPUT
             exit 1
           fi
-          
+
           echo "✓ Safe to push (fast-forward possible)"
           echo "diverged=false" >> $GITHUB_OUTPUT
           echo "::endgroup::"
@@ -55,7 +55,7 @@ jobs:
         if: steps.validate.outputs.diverged == 'false'
         run: |
           echo "::group::Pushing to official repository"
-          
+
           # Push main branch (NO --force)
           if git push official main; then
             echo "✓ Successfully pushed main branch"
@@ -63,24 +63,24 @@ jobs:
             echo "::error::Failed to push main branch"
             exit 1
           fi
-          
+
           # Push tags (NO --force)
           if git push official --tags; then
             echo "✓ Successfully pushed tags"
           else
             echo "::warning::Failed to push some tags (may already exist)"
           fi
-          
+
           echo "::endgroup::"
 
       - name: Verify promotion
         run: |
           echo "::group::Verifying promotion"
           git fetch official
-          
+
           LOCAL_SHA=$(git rev-parse main)
           REMOTE_SHA=$(git rev-parse official/main)
-          
+
           if [ "$LOCAL_SHA" = "$REMOTE_SHA" ]; then
             echo "✓ Promotion verified successfully"
             echo "Official repository is now at: $REMOTE_SHA"
