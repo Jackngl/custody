@@ -764,11 +764,35 @@ cd custody
 cp -r custom_components/custody_schedule /config/custom_components/
 ```
 
-### Workflow de versioning (CI/CD)
+### Workflow CI/CD
 
-Le projet utilise un workflow automatisé pour la création des tags et des releases.
-- Toute fusion (merge) sur `main` incrémente automatiquement la version (patch).
-- **Important** : Si vous effectuez un changement de version manuel ou une correction documentaire qui ne nécessite pas de nouvelle release, ajoutez **`[skip version]`** dans votre message de commit pour désactiver l'auto-incrémentation.
+Le projet utilise plusieurs workflows automatisés pour assurer la qualité et la maintenance :
+
+#### Tests et validation automatiques
+
+À chaque push ou pull request, les workflows suivants sont exécutés :
+
+- **Lint & Code Quality** : Vérification du formatage (Black), tri des imports (Isort), linting (Flake8), validation YAML
+- **Security Scan** : Analyse de sécurité avec Bandit
+- **Unit Tests** : Tests unitaires avec Pytest et génération de rapports de couverture
+- **Hassfest Validation** : Validation de la conformité avec les standards Home Assistant
+- **HACS Validation** : Vérification de la compatibilité HACS
+- **Core Compatibility Check** : Vérification de la compatibilité avec Home Assistant Core
+
+#### Workflow de versioning
+
+Le projet utilise un workflow automatisé pour la création des tags et des releases :
+
+- **Auto-incrémentation** : Toute fusion (merge) sur `main` incrémente automatiquement la version (patch)
+- **Création de tags** : Un tag Git est créé automatiquement pour chaque nouvelle version
+- **GitHub Releases** : Une release GitHub est générée automatiquement avec les notes de version
+- **Mise à jour du badge** : Le badge de version dans le README est mis à jour automatiquement
+
+**Important** : Si vous effectuez un changement de version manuel ou une correction documentaire qui ne nécessite pas de nouvelle release, ajoutez **`[skip version]`** dans votre message de commit pour désactiver l'auto-incrémentation.
+
+#### Promotion vers le dépôt officiel
+
+Lorsqu'une release est publiée, un workflow automatique promeut les changements vers le dépôt officiel (`Jackngl/custody`) avec validation de fast-forward pour garantir la sécurité.
 
 ### Tests
 
@@ -778,6 +802,16 @@ Les tests peuvent être effectués via le service de test de l'API :
 service: custody_schedule.test_holiday_api
 data:
   zone: "A"
+```
+
+Pour exécuter les tests localement :
+
+```bash
+# Installer les dépendances de test
+pip install -r requirements_test.txt
+
+# Exécuter les tests
+pytest tests --cov=custom_components/custody_schedule --cov-report=term-missing
 ```
 
 ---
