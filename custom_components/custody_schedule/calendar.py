@@ -4,29 +4,18 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from homeassistant.components.calendar import (
-    CalendarEntity,
-    CalendarEvent,
-)
+from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.util import dt as dt_util, slugify
+from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
 
 from . import CustodyScheduleCoordinator
-from .const import (
-    CONF_CHILD_NAME,
-    CONF_CHILD_NAME_DISPLAY,
-    CONF_LOCATION,
-    CONF_PHOTO,
-    DOMAIN,
-)
-from .schedule import (
-    CustodyComputation,
-    CustodyWindow,
-)
+from .const import CONF_CHILD_NAME, CONF_CHILD_NAME_DISPLAY, CONF_LOCATION, CONF_PHOTO, DOMAIN
+from .schedule import CustodyComputation, CustodyWindow
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
