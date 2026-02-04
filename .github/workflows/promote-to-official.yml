@@ -3,7 +3,7 @@ name: Promote to Official
 on:
   release:
     types: [published]
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
   promote:
