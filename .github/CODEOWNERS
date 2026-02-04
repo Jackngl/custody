@@ -1,0 +1,5 @@
+# These owners will be the default owners for everything in the repo.
+# Unless a different owner is specified, the default owners will be listed 
+# as reviewers on any new pull request.
+
+* @Jackngl
