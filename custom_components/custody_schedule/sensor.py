@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.util import slugify
+from homeassistant.util import dt as dt_util, slugify
 
 from . import CustodyScheduleCoordinator
 from .const import (
@@ -131,9 +131,9 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
 
         key = self._definition.key
         if key == "next_arrival":
-            return data.next_arrival
+            return dt_util.as_local(data.next_arrival) if data.next_arrival else None
         if key == "next_departure":
-            return data.next_departure
+            return dt_util.as_local(data.next_departure) if data.next_departure else None
         if key == "days_remaining":
             return data.days_remaining
         if key == "current_period":
@@ -141,7 +141,7 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         if key == "next_vacation_name":
             return data.next_vacation_name
         if key == "next_vacation_start":
-            return data.next_vacation_start
+            return dt_util.as_local(data.next_vacation_start) if data.next_vacation_start else None
         if key == "days_until_vacation":
             return data.days_until_vacation
         return None
@@ -157,12 +157,12 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             ATTR_CUSTODY_TYPE: self._entry.data.get("custody_type"),
             ATTR_CURRENT_PERIOD: data.current_period,
             ATTR_VACATION_NAME: data.vacation_name,
-            ATTR_NEXT_ARRIVAL: data.next_arrival,
-            ATTR_NEXT_DEPARTURE: data.next_departure,
+            ATTR_NEXT_ARRIVAL: dt_util.as_local(data.next_arrival) if data.next_arrival else None,
+            ATTR_NEXT_DEPARTURE: dt_util.as_local(data.next_departure) if data.next_departure else None,
             ATTR_DAYS_REMAINING: data.days_remaining,
             ATTR_NEXT_VACATION_NAME: data.next_vacation_name,
-            ATTR_NEXT_VACATION_START: data.next_vacation_start,
-            ATTR_NEXT_VACATION_END: data.next_vacation_end,
+            ATTR_NEXT_VACATION_START: dt_util.as_local(data.next_vacation_start) if data.next_vacation_start else None,
+            ATTR_NEXT_VACATION_END: dt_util.as_local(data.next_vacation_end) if data.next_vacation_end else None,
             ATTR_DAYS_UNTIL_VACATION: data.days_until_vacation,
             ATTR_SCHOOL_HOLIDAYS_RAW: data.school_holidays_raw,
         }
