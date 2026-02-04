@@ -17,8 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.util import dt as dt_util
-from homeassistant.util import slugify
+from homeassistant.util import dt as dt_util, slugify
 
 from . import CustodyScheduleCoordinator
 from .const import (
