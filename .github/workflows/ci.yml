@@ -132,13 +132,13 @@ jobs:
         run: |
           echo "Checking manifest compatibility with Home Assistant Core..."
           MANIFEST="custom_components/custody_schedule/manifest.json"
-          
+
           # Check for 'version' field (required for custom, forbidden for Core)
           if grep -q '"version"' "$MANIFEST"; then
             echo "ℹ️  INFO: 'version' field found (required for custom integration)"
             echo "    If submitting to Core, this field must be removed."
           fi
-          
+
           # Check for 'integration_type' (will be required for Core)
           if ! grep -q '"integration_type"' "$MANIFEST"; then
             echo "⚠️  WARNING: Missing 'integration_type' field"
@@ -148,7 +148,7 @@ jobs:
             INTEGRATION_TYPE=$(grep -o '"integration_type"[[:space:]]*:[[:space:]]*"[^"]*"' "$MANIFEST" | cut -d'"' -f4)
             echo "✓ integration_type found: $INTEGRATION_TYPE"
           fi
-          
+
           # Check documentation URL
           DOC_URL=$(grep -o '"documentation"[[:space:]]*:[[:space:]]*"[^"]*"' "$MANIFEST" | cut -d'"' -f4)
           if echo "$DOC_URL" | grep -q "home-assistant.io/integrations"; then
@@ -157,7 +157,7 @@ jobs:
             echo "ℹ️  INFO: Documentation URL: $DOC_URL"
             echo "    For Core submission, should be: https://www.home-assistant.io/integrations/custody_schedule"
           fi
-          
+
           echo ""
           echo "Summary: Current configuration is optimized for custom integration."
           echo "No action needed unless planning Core submission."
