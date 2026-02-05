@@ -1,6 +1,7 @@
 import unittest
-from datetime import datetime, date, time, timedelta
+from datetime import date, datetime
 from unittest.mock import MagicMock
+
 from custom_components.custody_schedule.schedule import CustodyScheduleManager
 
 
@@ -17,11 +18,7 @@ class TestCustodyLogic(unittest.TestCase):
 
     def test_calculate_end_date_sunday_default(self):
         # Using string keys to avoid direct constant dependency in tests
-        config = {
-            "arrival_time": "08:00",
-            "departure_time": "19:00",
-            "end_day": "sunday"
-        }
+        config = {"arrival_time": "08:00", "departure_time": "19:00", "end_day": "sunday"}
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Friday Oct 3, 2025
@@ -35,11 +32,7 @@ class TestCustodyLogic(unittest.TestCase):
         self.assertEqual(end_date.weekday(), 6)  # Sunday
 
     def test_calculate_end_date_monday_return(self):
-        config = {
-            "arrival_time": "08:00",
-            "departure_time": "19:00",
-            "end_day": "monday"
-        }
+        config = {"arrival_time": "08:00", "departure_time": "19:00", "end_day": "monday"}
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Friday Oct 3, 2025
@@ -53,11 +46,7 @@ class TestCustodyLogic(unittest.TestCase):
         self.assertEqual(end_date.weekday(), 0)  # Monday
 
     def test_calculate_end_date_holiday_extension(self):
-        config = {
-            "arrival_time": "08:00",
-            "departure_time": "19:00",
-            "end_day": "monday"
-        }
+        config = {"arrival_time": "08:00", "departure_time": "19:00", "end_day": "monday"}
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Friday Oct 3, 2025
@@ -72,11 +61,7 @@ class TestCustodyLogic(unittest.TestCase):
         self.assertEqual(end_date.weekday(), 1)  # Tuesday
 
     def test_calculate_end_date_long_holiday_extension(self):
-        config = {
-            "arrival_time": "08:00",
-            "departure_time": "19:00",
-            "end_day": "monday"
-        }
+        config = {"arrival_time": "08:00", "departure_time": "19:00", "end_day": "monday"}
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Friday Oct 3, 2025
@@ -91,11 +76,7 @@ class TestCustodyLogic(unittest.TestCase):
         self.assertEqual(end_date.weekday(), 2)  # Wednesday
 
     def test_alternate_week_monday_to_monday(self):
-        config = {
-            "arrival_time": "08:00",
-            "departure_time": "19:00",
-            "end_day": "monday"
-        }
+        config = {"arrival_time": "08:00", "departure_time": "19:00", "end_day": "monday"}
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Monday Oct 6, 2025

@@ -114,6 +114,7 @@ from .const import (
     CONF_CUSTOM_PATTERN,
     CONF_CUSTOM_RULES,
     CONF_DEPARTURE_TIME,
+    CONF_END_DAY,
     CONF_EXCEPTIONS_RECURRING,
     CONF_LOCATION,
     CONF_NOTES,
@@ -655,12 +656,6 @@ class CustodyScheduleManager:
                     window_start = friday
                     window_end = base_end_date
                     label_suffix = ""
-
-                    # Check if weekend falls during vacation period
-                    # If yes, don't apply public holiday extensions (vacations dominate)
-                    weekend_in_vacation = self._is_in_vacation_period(
-                        friday, vacation_windows
-                    ) or self._is_in_vacation_period(window_end, vacation_windows)
 
                     # Resolve end date using helper
                     window_end = self._calculate_end_date(window_start, holidays)
