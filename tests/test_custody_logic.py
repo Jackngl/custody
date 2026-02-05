@@ -1,5 +1,5 @@
 import unittest
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from unittest.mock import MagicMock
 
 from custom_components.custody_schedule.schedule import CustodyScheduleManager
@@ -22,7 +22,7 @@ class TestCustodyLogic(unittest.TestCase):
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Friday Oct 3, 2025
-        start_date = datetime(2025, 10, 3, 8, 0)
+        start_date = datetime(2025, 10, 3, 8, 0, tzinfo=timezone.utc)
         holidays = set()
 
         end_date = manager._calculate_end_date(start_date, holidays)
@@ -36,7 +36,7 @@ class TestCustodyLogic(unittest.TestCase):
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Friday Oct 3, 2025
-        start_date = datetime(2025, 10, 3, 8, 0)
+        start_date = datetime(2025, 10, 3, 8, 0, tzinfo=timezone.utc)
         holidays = set()
 
         end_date = manager._calculate_end_date(start_date, holidays)
@@ -50,7 +50,7 @@ class TestCustodyLogic(unittest.TestCase):
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Friday Oct 3, 2025
-        start_date = datetime(2025, 10, 3, 8, 0)
+        start_date = datetime(2025, 10, 3, 8, 0, tzinfo=timezone.utc)
         # Monday Oct 6 is a holiday
         holidays = {date(2025, 10, 6)}
 
@@ -65,7 +65,7 @@ class TestCustodyLogic(unittest.TestCase):
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Friday Oct 3, 2025
-        start_date = datetime(2025, 10, 3, 8, 0)
+        start_date = datetime(2025, 10, 3, 8, 0, tzinfo=timezone.utc)
         # Monday Oct 6 and Tuesday Oct 7 are holidays
         holidays = {date(2025, 10, 6), date(2025, 10, 7)}
 
@@ -80,7 +80,7 @@ class TestCustodyLogic(unittest.TestCase):
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
 
         # Monday Oct 6, 2025
-        start_date = datetime(2025, 10, 6, 8, 0)
+        start_date = datetime(2025, 10, 6, 8, 0, tzinfo=timezone.utc)
         holidays = set()
 
         end_date = manager._calculate_end_date(start_date, holidays)
@@ -94,20 +94,16 @@ class TestCustodyLogic(unittest.TestCase):
         config = {
             "arrival_time": "08:00",
             "departure_time": "19:00",
-            "custody_type": "two_two_three"
+            "custody_type": "two_two_three",
         }
         manager = CustodyScheduleManager(self.hass, config, self.holidays)
-        
+
         # Friday Oct 3, 2025
-        # The general loop uses self._reference_start(now, custody_type)
-        # We can just check the _generate_pattern_windows if we mock more
-        # But for now, let's just verify the logic doesn't crash
-        holidays = set()
-        now = datetime(2025, 10, 3, 8, 0)
-        
-        # This calls the general loop we just modified
+        now = datetime(2025, 10, 3, 8, 0, tzinfo=timezone.utc)
+
+        # This calls the general loop which uses _reference_start (returns aware)
         windows = manager._generate_pattern_windows(now)
-        
+
         self.assertTrue(len(windows) > 0)
         # First window should be 2 days (index 0 and 1) -> start Friday, end Saturday
         # because duration = days-1 = 1 day. (Friday 08:00 to Saturday 19:00)
