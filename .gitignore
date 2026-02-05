@@ -5,3 +5,6 @@ __pycache__/
 *.swp
 .mypy_cache/
 .pytest_cache/
+.venv/
+venv/
+.env
