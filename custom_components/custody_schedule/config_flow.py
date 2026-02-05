@@ -402,40 +402,23 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     async def async_step_custody(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Configure garde classique (weekends/semaines) - step 2."""
+        """Configure garde classique (Rythme) - step 2."""
         if user_input:
-            cleaned = dict(user_input)
-            cleaned[CONF_ARRIVAL_TIME] = _time_to_str(user_input.get(CONF_ARRIVAL_TIME), "08:00")
-            cleaned[CONF_DEPARTURE_TIME] = _time_to_str(user_input.get(CONF_DEPARTURE_TIME), "19:00")
-            # For alternate_weekend/alternate_week_parity, start_day is not used (based on ISO week parity)
-            # But we still save it for other custody types
-            self._data.update(cleaned)
-            if cleaned[CONF_CUSTODY_TYPE] == "custom":
-                return await self.async_step_custom_pattern()
-            return await self.async_step_vacations()
+            self._data.update(user_input)
+            return await self.async_step_schedule()
 
-        # Use saved data if user goes back
         custody_type = self._data.get(CONF_CUSTODY_TYPE, "alternate_week")
-        # start_day is only relevant for custody types that use cycles (not alternate_weekend/alternate_week_parity)
         show_start_day = custody_type not in ("alternate_weekend", "alternate_week_parity")
 
         reference_year_default = self._data.get(
             CONF_REFERENCE_YEAR_CUSTODY, self._data.get(CONF_REFERENCE_YEAR, "even")
         )
+
         schema_dict = {
             vol.Required(CONF_CUSTODY_TYPE, default=custody_type): _custody_type_selector(),
             vol.Required(CONF_REFERENCE_YEAR_CUSTODY, default=reference_year_default): _reference_year_selector(),
-            vol.Required(
-                CONF_ARRIVAL_TIME, default=self._data.get(CONF_ARRIVAL_TIME, "08:00")
-            ): selector.TimeSelector(),
-            vol.Required(
-                CONF_DEPARTURE_TIME, default=self._data.get(CONF_DEPARTURE_TIME, "19:00")
-            ): selector.TimeSelector(),
-            vol.Required(CONF_END_DAY, default=self._data.get(CONF_END_DAY, "sunday")): _end_day_selector(),
-            vol.Optional(CONF_LOCATION, default=self._data.get(CONF_LOCATION, "")): selector.TextSelector(),
         }
 
-        # Only show start_day for custody types that use it
         if show_start_day:
             schema_dict[
                 vol.Required(CONF_START_DAY, default=self._data.get(CONF_START_DAY, "monday"))
@@ -443,6 +426,43 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="custody",
+            data_schema=vol.Schema(schema_dict),
+        )
+
+    async def async_step_schedule(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Configure times and return day - step 2.5."""
+        if user_input:
+            cleaned = dict(user_input)
+            cleaned[CONF_ARRIVAL_TIME] = _time_to_str(user_input.get(CONF_ARRIVAL_TIME), "08:00")
+            cleaned[CONF_DEPARTURE_TIME] = _time_to_str(user_input.get(CONF_DEPARTURE_TIME), "19:00")
+            self._data.update(cleaned)
+
+            if self._data.get(CONF_CUSTODY_TYPE) == "custom":
+                return await self.async_step_custom_pattern()
+            return await self.async_step_vacations()
+
+        custody_type = self._data.get(CONF_CUSTODY_TYPE, "alternate_week")
+        # Default end_day to start_day for weeks, or Sunday for weekends
+        default_end = self._data.get(CONF_END_DAY)
+        if not default_end:
+            if custody_type == "alternate_weekend":
+                default_end = "sunday"
+            else:
+                default_end = self._data.get(CONF_START_DAY, "monday")
+
+        schema_dict = {
+            vol.Required(
+                CONF_ARRIVAL_TIME, default=self._data.get(CONF_ARRIVAL_TIME, "08:00")
+            ): selector.TimeSelector(),
+            vol.Required(
+                CONF_DEPARTURE_TIME, default=self._data.get(CONF_DEPARTURE_TIME, "19:00")
+            ): selector.TimeSelector(),
+            vol.Required(CONF_END_DAY, default=default_end): _end_day_selector(),
+            vol.Optional(CONF_LOCATION, default=self._data.get(CONF_LOCATION, "")): selector.TextSelector(),
+        }
+
+        return self.async_show_form(
+            step_id="schedule",
             data_schema=vol.Schema(schema_dict),
             description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")},
         )
@@ -661,10 +681,11 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
             vol.Required(CONF_REFERENCE_YEAR_CUSTODY, default=reference_year_default): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=[
-                        {"value": "even", "label": "Je l'ai les années paires"},
-                        {"value": "odd", "label": "Je l'ai les années impaires"},
+                        {"value": "even", "label": "even"},
+                        {"value": "odd", "label": "odd"},
                     ],
                     mode=selector.SelectSelectorMode.LIST,
+                    translation_key="reference_year",
                 )
             ),
         }
