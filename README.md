@@ -729,12 +729,13 @@ Results are available in Home Assistant logs (**Settings** → **System** → **
 - [x] **Blueprints**: Added first Alexa announcement template
 - [x] **Assist Refinements**: Custom sentences ("Who has Lucas?")
 
-### v1.8 (Available 🚀)
+### v1.8 (Released ✅)
 - [x] **Bilingual Support**: Complete French / English translations (Entities, Config Flow, Assist)
 - [x] **Internationalization**: Support for school calendars and holidays for Belgium, Switzerland, Luxembourg, and Quebec
 - [x] **Language Detection**: Automatic adaptation based on HA configuration for Assist
+- [x] **Stability & Maintenance**: CI/CD improvements, bug fixes (Intents, Imports), and logo update
 
-### v1.9
+### v1.9 (In Progress 🚧)
 - [ ] **Quick Exchange Mode**: Exchange confirmation button with co-parent notification and history log
 - [ ] **One-tap Override Dashboard**: Handle unexpected events (delays, extra sleepover) with one click
 

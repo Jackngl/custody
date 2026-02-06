@@ -729,12 +729,13 @@ Les résultats sont disponibles dans les logs Home Assistant (**Paramètres** �
 - [x] **Blueprints** : Ajout du premier modèle d'annonce Alexa
 - [x] **Raffinements Assist** : Phrases personnalisées ("Qui a Lucas ?")
 
-### v1.8 (Disponible 🚀)
+### v1.8 (Publié ✅)
 - [x] **Support Bilingue** : Traductions intégrales Français / Anglais (Entities, Config Flow, Assist)
 - [x] **Internationalisation** : Support des calendriers scolaires et jours fériés pour Belgique, Suisse, Luxembourg et Québec
 - [x] **Détection de langue** : Adaptation automatique selon la configuration HA pour Assist
+- [x] **Stabilité & Maintenance** : Améliorations CI/CD, corrections de bugs (Intents, Imports) et mise à jour du logo
 
-### v1.9
+### v1.9 (En cours 🚧)
 - [ ] **Mode "Échange Rapide"** : Bouton de confirmation d'échange avec notification au co-parent et log historique
 - [ ] **Dashboard "One-tap Override"** : Gérer les imprévus (retards, dodo supplémentaire) en un clic
 
