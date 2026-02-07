@@ -17,7 +17,8 @@
         "data": {
           "custody_type": "Custody type",
           "reference_year_custody": "Custody year (parity)",
-          "start_day": "Start day"
+          "start_day": "Start day",
+          "weekend_start_day": "Weekend start day"
         }
       },
       "schedule": {
@@ -137,11 +138,19 @@
         "title": "Custody Options",
         "description": "Choose what you want to modify.",
         "menu_options": {
+          "features": "Features",
           "custody": "Custody rhythm",
           "schedule": "Schedule and location",
           "vacations": "School vacations",
           "exceptions": "Exceptions",
           "advanced": "Advanced options"
+        }
+      },
+      "features": {
+        "title": "Features",
+        "description": "Enable or disable custody management (Vacations-only mode).",
+        "data": {
+          "enable_custody": "Enable custody management"
         }
       },
       "custody": {
@@ -252,6 +261,12 @@
       "options": {
         "even": "Even",
         "odd": "Odd"
+      }
+    },
+    "weekend_start_day": {
+      "options": {
+        "friday": "Friday",
+        "saturday": "Saturday"
       }
     },
     "start_day": {

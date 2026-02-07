@@ -111,9 +111,11 @@ from .const import (
     CONF_ARRIVAL_TIME,
     CONF_AUTO_PARENT_DAYS,
     CONF_COUNTRY,
+    CONF_CUSTODY_TYPE,
     CONF_CUSTOM_PATTERN,
     CONF_CUSTOM_RULES,
     CONF_DEPARTURE_TIME,
+    CONF_ENABLE_CUSTODY,
     CONF_END_DAY,
     CONF_EXCEPTIONS_RECURRING,
     CONF_LOCATION,
@@ -124,6 +126,7 @@ from .const import (
     CONF_START_DAY,
     CONF_SUMMER_SPLIT_MODE,
     CONF_VACATION_SPLIT_MODE,
+    CONF_WEEKEND_START_DAY,
     CONF_ZONE,
     CUSTODY_TYPES,
     DEFAULT_COUNTRY,
@@ -598,7 +601,10 @@ class CustodyScheduleManager:
         if vacation_windows is None:
             vacation_windows = []
 
-        custody_type = self._config.get("custody_type", "alternate_week")
+        if not self._config.get(CONF_ENABLE_CUSTODY, True):
+            return []
+
+        custody_type = self._config.get(CONF_CUSTODY_TYPE, "alternate_week")
         type_def = CUSTODY_TYPES.get(custody_type) or CUSTODY_TYPES["alternate_week"]
         # Use a longer horizon (400 days) to support 365-day calendar sync
         horizon = now + timedelta(days=400)
@@ -635,11 +641,15 @@ class CustodyScheduleManager:
                 iso_week = pointer.isocalendar().week
                 week_parity = iso_week % 2  # 0 = even, 1 = odd
                 if week_parity == target_parity:
-                    # Weekend: Friday 16:15 -> Sunday 19:00 (default)
-                    # or Friday -> Monday morning if configured.
+                    # Determine weekend start day from config (Friday or Saturday)
+                    weekend_start_day = self._config.get(CONF_WEEKEND_START_DAY, "friday")
+
                     # pointer is Monday of the week, so:
-                    # Friday = pointer + 4, Saturday = pointer + 5, Sunday = pointer + 6, Monday = pointer + 7
-                    friday = pointer + timedelta(days=4)
+                    # pointer is Monday: +4=Fri, +5=Sat, +6=Sun, +7=Mon
+                    if weekend_start_day == "saturday":
+                        weekend_start = pointer + timedelta(days=5)  # Saturday
+                    else:
+                        weekend_start = pointer + timedelta(days=4)  # Friday (default)
 
                     # Resolve base end day
                     target_end_weekday = WEEKDAY_LOOKUP.get(self._end_day, 6)
@@ -647,11 +657,11 @@ class CustodyScheduleManager:
                     base_end_date = pointer + timedelta(days=days_to_end)
 
                     # Check if end falls before start (weekend spanning)
-                    if base_end_date < friday:
+                    if base_end_date < weekend_start:
                         base_end_date += timedelta(days=7)
 
                     # Default start/end
-                    window_start = friday
+                    window_start = weekend_start
                     window_end = base_end_date
                     label_suffix = ""
 

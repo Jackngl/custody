@@ -62,6 +62,12 @@ CONF_PARENTAL_ROLE = "parental_role"
 CONF_AUTO_PARENT_DAYS = "auto_parent_days"
 CONF_CUSTOM_PATTERN = "custom_pattern"
 
+# Modular features (custody can be disabled for vacations-only mode)
+CONF_ENABLE_CUSTODY = "enable_custody"
+
+# Weekend start day (for alternate_weekend custody type)
+CONF_WEEKEND_START_DAY = "weekend_start_day"  # "friday" or "saturday"
+
 SERVICE_EXPORT_PLANNING_PDF = "export_planning_pdf"
 
 DEFAULT_COUNTRY = "FR"
