@@ -18,7 +18,10 @@ This PR implements two major features to improve flexibility and usability:
 
 3.  **UI & Experience Improvements**
     *   **Dynamic Vacation Configuration**: Split vacation setup into two steps. First select Country, then select Zone (filtered by country).
-    *   **Refined Translations**: Improved French translations and removed redundant help text.
+    *   **Refined Translations**: 
+        *   Improved French translations and removed redundant help text.
+        *   Used `data_description` for cleaner UI (descriptions appear below fields).
+        *   Clarified behavior for `enable_custody` and Alsace-Moselle options.
 
 ## Changes
 
@@ -40,3 +43,4 @@ This PR implements two major features to improve flexibility and usability:
 -   [x] **Full Mode**: Verified standard behavior allows full configuration.
 -   [x] **Options Flow**: Verified toggling features updates menu and behavior.
 -   [x] **Dynamic Zones**: Verified choosing a country updates available zones in the next step.
+-   [x] **Translations**: Verified all keys have proper labels and descriptions (FR/EN).
