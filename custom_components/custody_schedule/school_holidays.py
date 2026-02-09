@@ -143,53 +143,57 @@ class OpenHolidaysProvider(BaseHolidayProvider):
     async def get_holidays(self, country: str, zone: str, year: int | None = None) -> list[SchoolHoliday]:
         """Fetch holidays from OpenHolidays API."""
         now = dt_util.now()
-        target_year = year or now.year
+        years = [year] if year else [now.year, now.year + 1]
+        all_holidays = []
 
-        # OpenHolidays API: https://www.openholidaysapi.org/en/
-        # Format: /SchoolHolidays?countryIsoCode=BE&languageIsoCode=FR&validFrom=2024-01-01&validTo=2024-12-31
-        lang = "FR" if country in ["BE", "CH", "LU"] else "EN"
-        valid_from = f"{target_year}-01-01"
-        valid_to = f"{target_year + 1}-01-01"
+        for target_year in years:
+            # OpenHolidays API: https://www.openholidaysapi.org/en/
+            # Format: /SchoolHolidays?countryIsoCode=BE&languageIsoCode=FR&validFrom=2024-01-01&validTo=2024-12-31
+            lang = "FR" if country in ["BE", "CH", "LU"] else "EN"
+            valid_from = f"{target_year}-01-01"
+            valid_to = f"{target_year + 1}-01-01"
 
-        base_url = "https://openholidaysapi.org/SchoolHolidays"
-        params = {
-            "countryIsoCode": country,
-            "languageIsoCode": lang,
-            "validFrom": valid_from,
-            "validTo": valid_to,
-        }
+            base_url = "https://openholidaysapi.org/SchoolHolidays"
+            params = {
+                "countryIsoCode": country,
+                "languageIsoCode": lang,
+                "validFrom": valid_from,
+                "validTo": valid_to,
+            }
 
-        # If zone is specified (Subdivision), add it (Canton for CH, Community for BE)
-        if zone and zone not in ["FR", "BE", "CH", "LU", "A", "B", "C", "Corse", "DOM-TOM"]:
-            params["subdivisionCode"] = zone
+            # If zone is specified (Subdivision), add it (Canton for CH, Community for BE)
+            if zone and zone not in ["FR", "BE", "CH", "LU", "A", "B", "C", "Corse", "DOM-TOM"]:
+                params["subdivisionCode"] = zone
 
-        holidays = []
-        try:
-            async with self.session.get(base_url, params=params) as resp:
-                resp.raise_for_status()
-                payload = await resp.json()
-                for item in payload:
-                    name_dict = item.get("name", [])
-                    name = next((n.get("text") for n in name_dict if n.get("language") == lang.lower()), "Vacances")
-                    start_naive = dt_util.parse_datetime(item.get("startDate"))
-                    end_naive = dt_util.parse_datetime(item.get("endDate"))
-                    if start_naive and end_naive:
-                        # Ensure we use midnight for bounds
-                        start = dt_util.as_local(datetime.combine(start_naive.date(), datetime.min.time()))
-                        end = dt_util.as_local(datetime.combine(end_naive.date(), datetime.max.time()))
-
-                        holidays.append(
-                            SchoolHoliday(
-                                name=name,
-                                zone=zone,
-                                start=start,
-                                end=end,
+            try:
+                async with self.session.get(base_url, params=params) as resp:
+                    resp.raise_for_status()
+                    payload = await resp.json()
+                    for item in payload:
+                        name_dict = item.get("name", [])
+                        name = next((n.get("text") for n in name_dict if n.get("language") == lang.lower()), "Vacances")
+                        start_naive = dt_util.parse_datetime(item.get("startDate"))
+                        end_naive = dt_util.parse_datetime(item.get("endDate"))
+                        if start_naive and end_naive:
+                            # Use explicit combine with local timezone to prevent shifts
+                            tz = dt_util.get_time_zone(self.hass.config.time_zone)
+                            start = dt_util.as_local(
+                                datetime.combine(start_naive.date(), datetime.min.time(), tzinfo=tz)
                             )
-                        )
-        except Exception as err:
-            LOGGER.error("Error fetching from OpenHolidays: %s", err)
+                            end = dt_util.as_local(datetime.combine(end_naive.date(), datetime.max.time(), tzinfo=tz))
 
-        return sorted(holidays, key=lambda h: h.start)
+                            all_holidays.append(
+                                SchoolHoliday(
+                                    name=name,
+                                    zone=zone,
+                                    start=start,
+                                    end=end,
+                                )
+                            )
+            except Exception as err:
+                LOGGER.error("Error fetching from OpenHolidays for %s: %s", target_year, err)
+
+        return sorted(all_holidays, key=lambda h: h.start)
 
 
 class CanadaHolidayProvider(BaseHolidayProvider):
@@ -197,29 +201,31 @@ class CanadaHolidayProvider(BaseHolidayProvider):
 
     async def get_holidays(self, country: str, zone: str, year: int | None = None) -> list[SchoolHoliday]:
         """Fetch holidays for Canada."""
-        # For now, simplistic implementation for Quebec
-        # We can use https://canada-holidays.ca/api
         now = dt_util.now()
-        target_year = year or now.year
-        url = f"https://canada-holidays.ca/api/v1/provinces/QC?year={target_year}"
+        years = [year] if year else [now.year, now.year + 1]
+        all_holidays = []
+        tz = dt_util.get_time_zone(self.hass.config.time_zone)
 
-        holidays = []
-        try:
-            async with self.session.get(url) as resp:
-                resp.raise_for_status()
-                payload = await resp.json()
-                province = payload.get("province", {})
-                for h in province.get("holidays", []):
-                    name = h.get("nameFr") or h.get("nameEn")
-                    start_date = dt_util.parse_datetime(h.get("observedDate") or h.get("date"))
-                    if start_date:
-                        start = dt_util.as_local(datetime.combine(start_date.date(), datetime.min.time()))
-                        end = dt_util.as_local(datetime.combine(start_date.date(), datetime.max.time()))
-                        holidays.append(SchoolHoliday(name, zone, start, end))
-        except Exception as err:
-            LOGGER.error("Error fetching from Canada provider: %s", err)
+        for target_year in years:
+            url = f"https://canada-holidays.ca/api/v1/provinces/QC?year={target_year}"
+            try:
+                async with self.session.get(url) as resp:
+                    resp.raise_for_status()
+                    payload = await resp.json()
+                    province = payload.get("province", {})
+                    for h in province.get("holidays", []):
+                        name = h.get("nameFr") or h.get("nameEn")
+                        start_date = dt_util.parse_datetime(h.get("observedDate") or h.get("date"))
+                        if start_date:
+                            start = dt_util.as_local(
+                                datetime.combine(start_date.date(), datetime.min.time(), tzinfo=tz)
+                            )
+                            end = dt_util.as_local(datetime.combine(start_date.date(), datetime.max.time(), tzinfo=tz))
+                            all_holidays.append(SchoolHoliday(name, zone, start, end))
+            except Exception as err:
+                LOGGER.error("Error fetching from Canada provider for %s: %s", target_year, err)
 
-        return sorted(holidays, key=lambda h: h.start)
+        return sorted(all_holidays, key=lambda h: h.start)
 
 
 class SchoolHolidayClient:
