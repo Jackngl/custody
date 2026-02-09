@@ -43,19 +43,19 @@ jobs:
 
       - name: Run Black (Formatting)
         run: |
-          black --check custom_components/custody_schedule tests
+          black --check --force-exclude "tests/mock_ha/.*" custom_components/custody_schedule tests
 
       - name: Run Isort (Import sorting)
         run: |
-          isort --check-only custom_components/custody_schedule tests
+          isort --check-only --skip-glob "tests/mock_ha/*" custom_components/custody_schedule tests
 
       - name: Run Flake8 (Linting)
         run: |
           # F401: Module imported but not used (ignored in __init__.py often, but good to check)
           # E501: Line too long (handled by black mostly, but flake8 is strict)
           # W503: Line break before binary operator (conflicts with black)
-          flake8 custom_components/custody_schedule tests --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 custom_components/custody_schedule tests --count --max-complexity=10 --max-line-length=127 --statistics
+          flake8 custom_components/custody_schedule tests --exclude="tests/mock_ha" --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 custom_components/custody_schedule tests --exclude="tests/mock_ha" --count --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Run YamlLint
         run: |
