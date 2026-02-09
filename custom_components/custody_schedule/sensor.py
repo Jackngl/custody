@@ -160,8 +160,9 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
 
             # Use relative formatting for "soon" events, or absolute for distant ones
             diff = target - dt_util.now()
+            time_only = target.strftime("%H:%M")
             if diff < timedelta(days=1):
-                time_str = target.strftime("%H:%M")
+                time_str = time_only
             else:
                 # Localized day name
                 weekday = target.weekday()  # 0 = Monday, 6 = Sunday
@@ -171,7 +172,7 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
                     day_name = days[weekday]
                 else:
                     day_name = target.strftime("%A")
-                time_str = f"{day_name} {target.strftime('%d/%m')}"
+                time_str = f"{day_name} {target.strftime('%d/%m')} à {time_only}"
 
             if label:
                 # Clean up label if it's too long or repetitive

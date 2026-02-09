@@ -1147,10 +1147,24 @@ class CustodyScheduleManager:
         while effective_start_date.weekday() != 4:  # Friday
             effective_start_date -= timedelta(days=1)
 
-        # Effective end is the previous Sunday (end of vacation before school resumes)
+        # Effective end matches the configured end_day (usually Sunday or Monday)
+        # We look for the next occurrence of end_day after the vacation end_date
+        target_end_weekday = WEEKDAY_LOOKUP.get(self._end_day, 6)
         effective_end_date = end_date
-        while effective_end_date.weekday() != 6:  # Sunday
-            effective_end_date -= timedelta(days=1)
+        
+        # If the holiday already ends on or after the target weekday, 
+        # we might need to go to the NEXT one to cover the weekend.
+        # But if it ends on Monday 00:00 (FR), we want the previous Sunday.
+        
+        if end_dt.weekday() == 0 and end_dt.hour == 0:
+            # Case France: Ends Monday 00:00 -> Effective end is the previous Sunday/Monday
+            # We go back to the nearest target_end_weekday
+            while effective_end_date.weekday() != target_end_weekday:
+                effective_end_date -= timedelta(days=1)
+        else:
+            # Case BE/CH/LU: Ends Friday or Saturday -> Effective end is the following Sunday/Monday
+            while effective_end_date.weekday() != target_end_weekday:
+                effective_end_date += timedelta(days=1)
 
         effective_start = datetime.combine(effective_start_date, self._arrival_time, start_dt.tzinfo)
         effective_end = datetime.combine(effective_end_date, self._departure_time, end_dt.tzinfo)

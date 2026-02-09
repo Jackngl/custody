@@ -171,15 +171,19 @@ class OpenHolidaysProvider(BaseHolidayProvider):
                 for item in payload:
                     name_dict = item.get("name", [])
                     name = next((n.get("text") for n in name_dict if n.get("language") == lang.lower()), "Vacances")
-                    start = dt_util.parse_datetime(item.get("startDate"))
-                    end = dt_util.parse_datetime(item.get("endDate"))
-                    if start and end:
+                    start_naive = dt_util.parse_datetime(item.get("startDate"))
+                    end_naive = dt_util.parse_datetime(item.get("endDate"))
+                    if start_naive and end_naive:
+                        # Ensure we use midnight for bounds
+                        start = dt_util.as_local(datetime.combine(start_naive.date(), datetime.min.time()))
+                        end = dt_util.as_local(datetime.combine(end_naive.date(), datetime.max.time()))
+                        
                         holidays.append(
                             SchoolHoliday(
                                 name=name,
                                 zone=zone,
-                                start=dt_util.as_local(start),
-                                end=dt_util.as_local(end) + timedelta(days=1) - timedelta(seconds=1),
+                                start=start,
+                                end=end,
                             )
                         )
         except Exception as err:
