@@ -150,13 +150,13 @@ class CustodyComputation:
     """Final state consumed by entities."""
 
     is_present: bool
-    next_arrival: datetime | None
+    next_arrival: datetime | None = None
     next_arrival_label: str | None = None
-    next_departure: datetime | None
+    next_departure: datetime | None = None
     next_departure_label: str | None = None
-    days_remaining: int | None
-    current_period: str
-    vacation_name: str | None
+    days_remaining: int | None = None
+    current_period: str = "school"
+    vacation_name: str | None = None
     next_vacation_name: str | None = None
     next_vacation_start: datetime | None = None
     next_vacation_end: datetime | None = None
