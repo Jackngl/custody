@@ -64,7 +64,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No version change to commit"
           else
-            git commit -m "chore: auto-increment version to ${{ steps.version.outputs.version }}" || exit 0
+            git commit -m "chore: auto-increment version to ${{ steps.version.outputs.version }} [skip ci]" || exit 0
             git push origin HEAD:main || echo "WARNING: Failed to push version increment"
             echo "✓ Version increment committed and pushed"
           fi
