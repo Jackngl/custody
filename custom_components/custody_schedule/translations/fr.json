@@ -313,10 +313,20 @@
         "name": "Prochaines vacances"
       },
       "next_vacation_start": {
-        "name": "Date des prochaines vacances"
+        "name": "Début des vacances"
       },
       "days_until_vacation": {
         "name": "Jours jusqu'aux vacances"
+      },
+      "next_change": {
+        "name": "Prochain changement"
+      },
+      "parent_in_charge": {
+        "name": "Lieu de garde",
+        "state": {
+          "home": "Chez moi",
+          "away": "Chez l'autre parent"
+        }
       }
     }
   },

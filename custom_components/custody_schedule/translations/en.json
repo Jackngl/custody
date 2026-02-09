@@ -274,10 +274,20 @@
         "name": "Next vacations"
       },
       "next_vacation_start": {
-        "name": "Next vacations start"
+        "name": "Vacations start"
       },
       "days_until_vacation": {
         "name": "Days until vacations"
+      },
+      "next_change": {
+        "name": "Next change"
+      },
+      "parent_in_charge": {
+        "name": "Custody location",
+        "state": {
+          "home": "With me",
+          "away": "Other parent"
+        }
       }
     }
   },

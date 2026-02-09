@@ -23,7 +23,7 @@ The **Custody** integration automatically creates several entities for each conf
 - **1 Binary Sensor**: Presence status
 - **1 Calendar**: Complete calendar
 - **1 Device Tracker**: Presence tracking (usable in Person entity)
-- **7 Sensors**: Detailed information about custody and holidays
+- **9 Sensors**: Detailed information about custody and holidays
 
 All entities are prefixed by the **child's name slug**: lowercase, spaces replaced by underscores (e.g., "Sarah-Léa" → `sarah_lea`). Replace `{child}` in examples with this slug.
 
@@ -263,6 +263,36 @@ Number of days remaining before next school holiday start.
 #### Usage
 - **Dashboard**: Display day counter before holidays
 - **Automation**: Trigger actions before holidays
+
+
+### 11. Sensor: Next Change
+
+**Entity Name**: `sensor.{child}_next_change`  
+**Display Name**: `{Child} Next Change`
+
+#### Description
+Combined sensor summarizing the next event (arrival or departure).
+
+#### Format
+- **State**: String (e.g., "16:15" if today, or "Friday 21/02")
+- **Icon**: `mdi:calendar-sync`
+
+---
+
+### 12. Sensor: Custody Location
+
+**Entity Name**: `sensor.{child}_parent_in_charge`  
+**Display Name**: `{Child} Custody Location`
+
+#### Description
+Explicit state indicating where the child is.
+
+#### States
+- **`home`**: With me (Present)
+- **`away`**: Other parent (Absent)
+
+#### Icon
+Dynamic: `mdi:home-account` when present, `mdi:account-arrow-right` when absent.
 
 ---
 
@@ -593,8 +623,10 @@ All entities share common attributes accessible via `{{ state_attr('entity_id', 
 | Sensor | `sensor.{child}_days_remaining` | {Child} Days Remaining | Days before change |
 | Sensor | `sensor.{child}_current_period` | {Child} Current Period | `school` / `vacation` |
 | Sensor | `sensor.{child}_next_vacation_name` | {Child} Next Holidays | Holiday name |
-| Sensor | `sensor.{child}_next_vacation_start` | {Child} Next Holiday Start Date | Start date |
+| Sensor | `sensor.{child}_next_vacation_start` | {Child} Vacations Start | Start date |
 | Sensor | `sensor.{child}_days_until_vacation` | {Child} Days Until Holidays | Days before holidays |
+| Sensor | `sensor.{child}_next_change` | {Child} Next Change | Combined next event |
+| Sensor | `sensor.{child}_parent_in_charge` | {Child} Custody Location | home / away |
 
 ---
 

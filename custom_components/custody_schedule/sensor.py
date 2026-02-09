@@ -67,6 +67,8 @@ SENSORS: tuple[SensorDefinition, ...] = (
         SensorStateClass.MEASUREMENT,
         UnitOfTime.DAYS,
     ),
+    SensorDefinition("next_change", "mdi:calendar-sync"),
+    SensorDefinition("parent_in_charge", "mdi:account-child-circle"),
 )
 
 
@@ -138,6 +140,8 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         if key == "days_remaining":
             return data.days_remaining
         if key == "current_period":
+            if data.current_period == "vacation" and data.vacation_name:
+                return data.vacation_name
             return data.current_period
         if key == "next_vacation_name":
             return data.next_vacation_name
@@ -145,7 +149,44 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             return dt_util.as_local(data.next_vacation_start) if data.next_vacation_start else None
         if key == "days_until_vacation":
             return data.days_until_vacation
+        if key == "next_change":
+            if not data.next_arrival and not data.next_departure:
+                return None
+            target = data.next_departure if data.is_present else data.next_arrival
+            if not target:
+                return None
+            
+            # Use relative formatting for "soon" events, or absolute for distant ones
+            diff = target - dt_util.now()
+            if diff < timedelta(days=1):
+                return target.strftime("%H:%M")
+            return target.strftime("%A %d/%m")
+            
+        if key == "parent_in_charge":
+            return "home" if data.is_present else "away"
+            
         return None
+
+    @property
+    def icon(self) -> str | None:
+        """Return dynamic icon."""
+        data = self.coordinator.data
+        if not data:
+            return self._attr_icon
+
+        key = self._definition.key
+        if key == "current_period":
+            if data.current_period == "vacation":
+                return "mdi:beach"
+            return "mdi:home-clock"
+            
+        if key == "days_remaining":
+            return "mdi:timer-sand"
+            
+        if key == "parent_in_charge":
+            return "mdi:home-account" if data.is_present else "mdi:account-arrow-right"
+
+        return self._attr_icon
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
