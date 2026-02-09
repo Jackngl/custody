@@ -151,7 +151,9 @@ class CustodyComputation:
 
     is_present: bool
     next_arrival: datetime | None
+    next_arrival_label: str | None = None
     next_departure: datetime | None
+    next_departure_label: str | None = None
     days_remaining: int | None
     current_period: str
     vacation_name: str | None
@@ -312,20 +314,28 @@ class CustodyScheduleManager:
                     current_window = None
 
             next_arrival = None
+            next_arrival_label = None
             next_departure = None
+            next_departure_label = None
             if is_present:
                 # En garde actuellement
                 if current_window:
                     # On est dans une vraie fenêtre de garde
                     next_departure = current_window.end
+                    next_departure_label = current_window.label
                     # S'assurer que next_departure est dans le futur (avec une marge de 1 minute)
                     if next_departure and next_departure > now_local + timedelta(minutes=1):
                         # Chercher la fenêtre qui commence après next_departure
-                        next_arrival = next((w.start for w in windows if w.start > next_departure), None)
+                        next_arrival_win = next((w for w in windows if w.start > next_departure), None)
+                        if next_arrival_win:
+                            next_arrival = next_arrival_win.start
+                            next_arrival_label = next_arrival_win.label
                     else:
                         # Si la fin est dans le passé ou très proche, utiliser la prochaine fenêtre
                         next_departure = next_window.end if next_window else None
+                        next_departure_label = next_window.label if next_window else None
                         next_arrival = next_window.start if next_window else None
+                        next_arrival_label = next_window.label if next_window else None
                         # Si on n'a pas de next_window, chercher la prochaine fenêtre future
                         if not next_departure:
                             next_departure = next(
@@ -335,16 +345,22 @@ class CustodyScheduleManager:
                                 matching_window = next((w for w in windows if w.end == next_departure), None)
                                 if matching_window:
                                     next_arrival = matching_window.start
+                                    next_arrival_label = matching_window.label
                 elif override_state is True and self._presence_override and self._presence_override.get("until"):
                     # Override avec une date de fin spécifiée
                     next_departure = self._presence_override["until"]
                     if next_departure > now_local + timedelta(minutes=1):
                         # Chercher la fenêtre qui commence après l'override
-                        next_arrival = next((w.start for w in windows if w.start > next_departure), None)
+                        next_arrival_win = next((w for w in windows if w.start > next_departure), None)
+                        if next_arrival_win:
+                            next_arrival = next_arrival_win.start
+                            next_arrival_label = next_arrival_win.label
                     else:
                         # Override dans le passé ou très proche, utiliser la prochaine fenêtre
                         next_departure = next_window.end if next_window else None
+                        next_departure_label = next_window.label if next_window else None
                         next_arrival = next_window.start if next_window else None
+                        next_arrival_label = next_window.label if next_window else None
                         # Si on n'a pas de next_window, chercher la prochaine fenêtre future
                         if not next_departure:
                             next_departure = next(
@@ -354,29 +370,35 @@ class CustodyScheduleManager:
                                 matching_window = next((w for w in windows if w.end == next_departure), None)
                                 if matching_window:
                                     next_arrival = matching_window.start
+                                    next_arrival_label = matching_window.label
                 else:
                     # Override sans date de fin ou cas spécial, utiliser la prochaine fenêtre
                     next_departure = next_window.end if next_window else None
+                    next_departure_label = next_window.label if next_window else None
                     next_arrival = next_window.start if next_window else None
+                    next_arrival_label = next_window.label if next_window else None
             else:
                 # Quand l'enfant n'est pas présent, next_arrival est toujours la prochaine fenêtre de garde future
                 # et next_departure est la fin de cette même prochaine fenêtre
                 next_arrival = next_window.start if next_window else None
+                next_arrival_label = next_window.label if next_window else None
                 next_departure = next_window.end if next_window else None
+                next_departure_label = next_window.label if next_window else None
 
                 # S'assurer que next_departure est toujours dans le futur (avec marge d'1 minute)
                 # Normalement next_window.end devrait toujours être dans le futur, mais sécurité supplémentaire
                 if next_departure and next_departure <= now_local + timedelta(minutes=1):
                     # Si next_departure est dans le passé ou très proche, chercher la prochaine fenêtre après
-                    next_departure = next((w.end for w in windows if w.end > now_local + timedelta(minutes=1)), None)
-                    if next_departure:
-                        # Trouver la fenêtre correspondante pour next_arrival
-                        matching_window = next((w for w in windows if w.end == next_departure), None)
-                        if matching_window:
-                            next_arrival = matching_window.start
+                    next_departure_win = next((w for w in windows if w.end > now_local + timedelta(minutes=1)), None)
+                    if next_departure_win:
+                        next_departure = next_departure_win.end
+                        next_departure_label = next_departure_win.label
+                        next_arrival = next_departure_win.start
+                        next_arrival_label = next_departure_win.label
                     else:
                         # Si aucune fenêtre future, next_arrival devrait aussi être None
                         next_arrival = None
+                        next_arrival_label = None
 
             days_remaining = None
             target_dt = next_departure if is_present else next_arrival
@@ -404,7 +426,9 @@ class CustodyScheduleManager:
         return CustodyComputation(
             is_present=is_present,
             next_arrival=next_arrival,
+            next_arrival_label=next_arrival_label,
             next_departure=next_departure,
+            next_departure_label=next_departure_label,
             days_remaining=days_remaining,
             current_period=period,
             vacation_name=vacation_name,

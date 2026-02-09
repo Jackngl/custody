@@ -153,18 +153,26 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             if not data.next_arrival and not data.next_departure:
                 return None
             target = data.next_departure if data.is_present else data.next_arrival
+            label = data.next_departure_label if data.is_present else data.next_arrival_label
             if not target:
                 return None
-            
+
             # Use relative formatting for "soon" events, or absolute for distant ones
             diff = target - dt_util.now()
             if diff < timedelta(days=1):
-                return target.strftime("%H:%M")
-            return target.strftime("%A %d/%m")
-            
+                time_str = target.strftime("%H:%M")
+            else:
+                time_str = target.strftime("%A %d/%m")
+
+            if label:
+                # Clean up label if it's too long or repetitive
+                clean_label = label.replace("Garde - ", "").replace("Vacances scolaires - ", "")
+                return f"{time_str} ({clean_label})"
+            return time_str
+
         if key == "parent_in_charge":
             return "home" if data.is_present else "away"
-            
+
         return None
 
     @property
@@ -179,10 +187,10 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             if data.current_period == "vacation":
                 return "mdi:beach"
             return "mdi:home-clock"
-            
+
         if key == "days_remaining":
             return "mdi:timer-sand"
-            
+
         if key == "parent_in_charge":
             return "mdi:home-account" if data.is_present else "mdi:account-arrow-right"
 
@@ -200,7 +208,9 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             ATTR_CURRENT_PERIOD: data.current_period,
             ATTR_VACATION_NAME: data.vacation_name,
             ATTR_NEXT_ARRIVAL: dt_util.as_local(data.next_arrival) if data.next_arrival else None,
+            "next_arrival_label": data.next_arrival_label,
             ATTR_NEXT_DEPARTURE: dt_util.as_local(data.next_departure) if data.next_departure else None,
+            "next_departure_label": data.next_departure_label,
             ATTR_DAYS_REMAINING: data.days_remaining,
             ATTR_NEXT_VACATION_NAME: data.next_vacation_name,
             ATTR_NEXT_VACATION_START: dt_util.as_local(data.next_vacation_start) if data.next_vacation_start else None,
