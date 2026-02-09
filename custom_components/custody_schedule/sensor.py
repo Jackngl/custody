@@ -163,7 +163,15 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             if diff < timedelta(days=1):
                 time_str = target.strftime("%H:%M")
             else:
-                time_str = target.strftime("%A %d/%m")
+                # Localized day name
+                weekday = target.weekday()  # 0 = Monday, 6 = Sunday
+                lang = getattr(self.hass.config, "language", "en")
+                if lang.startswith("fr"):
+                    days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+                    day_name = days[weekday]
+                else:
+                    day_name = target.strftime("%A")
+                time_str = f"{day_name} {target.strftime('%d/%m')}"
 
             if label:
                 # Clean up label if it's too long or repetitive
