@@ -59,6 +59,7 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the integration (YAML not supported, placeholder only)."""
     hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN].setdefault("sync_locks", {})
     if not hass.data[DOMAIN].get("services_registered"):
         _register_services(hass)
         await async_setup_intents(hass)
@@ -150,7 +151,11 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
         self.manager = manager
         self.entry = entry
         self._last_state: CustodyComputation | None = None
-        self._calendar_sync_lock = asyncio.Lock()
+        # Use persistent lock from hass.data if available, fallback to instance lock
+        locks = hass.data.get(DOMAIN, {}).get("sync_locks", {})
+        if entry.entry_id not in locks:
+            locks[entry.entry_id] = asyncio.Lock()
+        self._calendar_sync_lock = locks[entry.entry_id]
         self._last_calendar_sync: datetime | None = None
 
     async def _async_update_data(self) -> CustodyComputation:
@@ -254,7 +259,11 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
 
 
 def _event_key(summary: str, start: Any, end: Any) -> tuple[str, datetime, datetime]:
-    """Create a consistent key for event comparison using UTC datetimes."""
+    """Create a consistent key for event comparison using UTC datetimes.
+
+    Timestamps are normalized to minute precision to avoid mismatches due
+    to millisecond differences between providers.
+    """
     # Ensure start/end are normalized to UTC datetimes for comparison
     start_dt = start if isinstance(start, datetime) else dt_util.parse_datetime(str(start))
     end_dt = end if isinstance(end, datetime) else dt_util.parse_datetime(str(end))
@@ -263,6 +272,12 @@ def _event_key(summary: str, start: Any, end: Any) -> tuple[str, datetime, datet
         start_dt = start_dt.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
     if end_dt and end_dt.tzinfo is None:
         end_dt = end_dt.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+
+    # Normalize to minute precision (zero out seconds and microseconds)
+    if start_dt:
+        start_dt = start_dt.replace(second=0, microsecond=0)
+    if end_dt:
+        end_dt = end_dt.replace(second=0, microsecond=0)
 
     return (
         summary.strip(),
@@ -804,6 +819,9 @@ async def _sync_calendar_events(
                 blocking=True,
             )
 
+    # Deduplicate windows to prevent redundant creations in the same sync loop
+    # Use a dict to keep the first occurrence of each unique key
+    unique_windows = {}
     for window in state.windows:
         if window.source == "vacation_filter":
             continue
@@ -811,6 +829,11 @@ async def _sync_calendar_events(
             continue
         summary = f"{child_label} • {window.label}".strip()
         key = _event_key(summary, window.start, window.end)
+        if key not in unique_windows:
+            unique_windows[key] = (window, summary)
+
+    desired_keys: set[tuple[str, datetime, datetime]] = set()
+    for key, (window, summary) in unique_windows.items():
         desired_keys.add(key)
         if key not in existing_keys:
             tasks.append(_async_create_event(window, summary, marker, target, location))
