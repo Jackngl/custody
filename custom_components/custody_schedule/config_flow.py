@@ -643,8 +643,16 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(
                     CONF_CALENDAR_SYNC_DAYS,
                     default=data.get(CONF_CALENDAR_SYNC_DAYS, 120),
-                ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(min=7, max=365, mode=selector.NumberSelectorMode.BOX, step=1)
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            {"value": "90", "label": "3 mois (90 jours)"},
+                            {"value": "180", "label": "6 mois (180 jours)"},
+                            {"value": "365", "label": "1 an (365 jours)"},
+                            {"value": "730", "label": "2 ans (730 jours)"},
+                        ],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
                 ),
                 vol.Optional(
                     CONF_CALENDAR_SYNC_INTERVAL_HOURS,
@@ -1254,8 +1262,16 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_CALENDAR_SYNC_DAYS,
                     default=data.get(CONF_CALENDAR_SYNC_DAYS, 120),
-                ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(min=7, max=365, mode=selector.NumberSelectorMode.BOX, step=1)
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[
+                            {"value": "90", "label": "3 mois (90 jours)"},
+                            {"value": "180", "label": "6 mois (180 jours)"},
+                            {"value": "365", "label": "1 an (365 jours)"},
+                            {"value": "730", "label": "2 ans (730 jours)"},
+                        ],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
                 ),
                 vol.Optional(
                     CONF_CALENDAR_SYNC_INTERVAL_HOURS,

@@ -648,8 +648,12 @@ class CustodyScheduleManager:
 
         custody_type = self._config.get(CONF_CUSTODY_TYPE, "alternate_week")
         type_def = CUSTODY_TYPES.get(custody_type) or CUSTODY_TYPES["alternate_week"]
-        # Use a longer horizon (400 days) to support 365-day calendar sync
-        horizon = now + timedelta(days=400)
+        # Use a longer horizon based on calendar sync settings
+        try:
+            sync_days = int(self._config.get(CONF_CALENDAR_SYNC_DAYS, 120))
+        except (TypeError, ValueError):
+            sync_days = 120
+        horizon = now + timedelta(days=max(400, sync_days + 30))
 
         # Cas particulier : week-ends basés sur la parité ISO des semaines
         if custody_type == "alternate_weekend":
@@ -659,8 +663,10 @@ class CustodyScheduleManager:
             # Get public holidays for current and next year
             country = self._config.get(CONF_COUNTRY, "FR")
             alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
-            holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(
-                now.year + 1, country, alsace_moselle
+            holidays = (
+                get_public_holidays(now.year, country, alsace_moselle)
+                | get_public_holidays(now.year + 1, country, alsace_moselle)
+                | get_public_holidays(now.year + 2, country, alsace_moselle)
             )
 
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
@@ -741,8 +747,10 @@ class CustodyScheduleManager:
             # Get public holidays for current and next year
             country = self._config.get(CONF_COUNTRY, "FR")
             alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
-            holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(
-                now.year + 1, country, alsace_moselle
+            holidays = (
+                get_public_holidays(now.year, country, alsace_moselle)
+                | get_public_holidays(now.year + 1, country, alsace_moselle)
+                | get_public_holidays(now.year + 2, country, alsace_moselle)
             )
 
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
@@ -825,8 +833,10 @@ class CustodyScheduleManager:
                     # Get public holidays
                     country = self._config.get(CONF_COUNTRY, "FR")
                     alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
-                    holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(
-                        now.year + 1, country, alsace_moselle
+                    holidays = (
+                        get_public_holidays(now.year, country, alsace_moselle)
+                        | get_public_holidays(now.year + 1, country, alsace_moselle)
+                        | get_public_holidays(now.year + 2, country, alsace_moselle)
                     )
                     segment_end = self._calculate_end_date(segment_start, holidays)
                     # For alternate_week, the next segment should start exactly when this one ends
@@ -840,8 +850,10 @@ class CustodyScheduleManager:
                     # Apply holiday extension
                     country = self._config.get(CONF_COUNTRY, "FR")
                     alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
-                    holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(
-                        now.year + 1, country, alsace_moselle
+                    holidays = (
+                        get_public_holidays(now.year, country, alsace_moselle)
+                        | get_public_holidays(now.year + 1, country, alsace_moselle)
+                        | get_public_holidays(now.year + 2, country, alsace_moselle)
                     )
                     segment_end = self._apply_holiday_extension(segment_end, holidays)
 

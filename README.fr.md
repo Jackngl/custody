@@ -140,7 +140,7 @@ Activez la synchronisation pour créer automatiquement les événements de garde
 2. Sélectionnez **Options avancées**
 3. Activez **Synchronisation Google Calendar**
 4. Choisissez le **Calendrier cible**
-5. Définissez la **fenêtre de synchro** (défaut : 120 jours)
+5. Définissez la **fenêtre de synchro** (3, 6, 12 ou 24 mois)
 6. Définissez l'**intervalle de synchro** (défaut : 1 heure)
 
 ### Exceptions
@@ -187,7 +187,7 @@ Depuis la version 1.3.0, la purge utilise une méthode d'accès direct aux entit
 action: custody_schedule.purge_calendar_events
 data:
   entry_id: "VOTRE_ENTRY_ID"
-  days: 120
+  days: 365
   debug: true
 ```
 
@@ -363,7 +363,7 @@ Supprime manuellement les événements du calendrier. Cette méthode identifie l
 
 **Paramètres** :
 - `entry_id` (requis) : ID de l'intégration
-- `days` (optionnel) : Fenêtre de scan en jours (défaut: 120)
+- `days` (optionnel) : Fenêtre de scan en jours (défaut: 365)
 - `include_unmarked` (optionnel) : Tente de supprimer même les événements sans marqueur explicite
 - `purge_all` (optionnel) : Supprime absolument TOUS les événements trouvés (attention)
 - `match_text` (optionnel) : Supprime les événements contenant ce texte dans le résumé

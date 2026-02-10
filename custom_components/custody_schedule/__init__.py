@@ -702,7 +702,7 @@ async def _sync_calendar_events(
         days = int(days)
     except (TypeError, ValueError):
         days = 120
-    days = max(7, min(365, days))
+    days = max(7, min(730, days))
     start_range = _ensure_local_tz(now - timedelta(days=1))
     end_range = _ensure_local_tz(now + timedelta(days=days))
 

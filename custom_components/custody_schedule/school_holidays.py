@@ -73,6 +73,7 @@ class FranceEducationProvider(BaseHolidayProvider):
             if len(parts) == 2:
                 next_year_start = int(parts[1])
                 school_years.add(f"{next_year_start}-{next_year_start + 1}")
+                school_years.add(f"{next_year_start + 1}-{next_year_start + 2}")
 
         normalized_zone = self._normalize_zone(zone)
         all_holidays: list[SchoolHoliday] = []
@@ -143,7 +144,7 @@ class OpenHolidaysProvider(BaseHolidayProvider):
     async def get_holidays(self, country: str, zone: str, year: int | None = None) -> list[SchoolHoliday]:
         """Fetch holidays from OpenHolidays API."""
         now = dt_util.now()
-        years = [year] if year else [now.year, now.year + 1]
+        years = [year] if year else [now.year, now.year + 1, now.year + 2]
         all_holidays = []
 
         for target_year in years:
@@ -202,7 +203,7 @@ class CanadaHolidayProvider(BaseHolidayProvider):
     async def get_holidays(self, country: str, zone: str, year: int | None = None) -> list[SchoolHoliday]:
         """Fetch holidays for Canada."""
         now = dt_util.now()
-        years = [year] if year else [now.year, now.year + 1]
+        years = [year] if year else [now.year, now.year + 1, now.year + 2]
         all_holidays = []
         tz = dt_util.get_time_zone(self.hass.config.time_zone)
 

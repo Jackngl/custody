@@ -140,7 +140,7 @@ Enable synchronization to automatically create custody events on your Home Assis
 2. Select **Advanced Options**
 3. Enable **Google Calendar Synchronization**
 4. Choose the **Target Calendar**
-5. Set the **Sync Window** (default: 120 days)
+5. Set the **Sync Window** (90, 180, 365, or 730 days)
 6. Set the **Sync Interval** (default: 1 hour)
 
 ### Exceptions
@@ -187,7 +187,7 @@ Since version 1.3.0, purge uses a direct access method to Home Assistant entitie
 action: custody_schedule.purge_calendar_events
 data:
   entry_id: "YOUR_ENTRY_ID"
-  days: 120
+  days: 365
   debug: true
 ```
 
@@ -363,7 +363,7 @@ Manually deletes calendar events. This method identifies events created by Custo
 
 **Parameters**:
 - `entry_id` (required): Integration ID
-- `days` (optional): Scan window in days (default: 120)
+- `days` (optional): Scan window in days (default: 365)
 - `include_unmarked` (optional): Attempts to delete even events without explicit marker
 - `purge_all` (optional): Deletes absolutely ALL found events (warning)
 - `match_text` (optional): Deletes events containing this text in summary
