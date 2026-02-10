@@ -7,24 +7,22 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import intent
 
-from .const import CONF_CHILD_NAME, CONF_CHILD_NAME_DISPLAY, DOMAIN
+from .const import CONF_CHILD_NAME, CONF_CHILD_NAME_DISPLAY, DOMAIN, LOGGER
 
 INTENT_WHO_HAS_CHILD = "CustodyWhoHasChild"
 
 
 async def async_setup_intents(hass: HomeAssistant) -> None:
     """Set up the custody intents."""
-    # Check if already registered to avoid overwriting warning
-    # Accessing internal storage is the only way to check existence without triggering warning
-    intent_handlers = hass.data.get("intent_handlers", {})
-    if INTENT_WHO_HAS_CHILD in intent_handlers:
+    # Check if already registered in this HA instance to avoid overwriting warning
+    if hass.data.get(DOMAIN, {}).get("intents_registered"):
         return
 
     try:
         intent.async_register(hass, CustodyWhoHasChildHandler())
-    except intent.IntentError:
-        # Fallback if logic changes
-        pass
+        hass.data.setdefault(DOMAIN, {})["intents_registered"] = True
+    except Exception as err:
+        LOGGER.error("Error registering intents: %s", err)
 
 
 class CustodyWhoHasChildHandler(intent.IntentHandler):
