@@ -809,7 +809,7 @@ async def _sync_calendar_events(
             continue
         if window.end < start_range or window.start > end_range:
             continue
-        summary = f"{child_label} - {window.label}".strip()
+        summary = f"{child_label} • {window.label}".strip()
         key = _event_key(summary, window.start, window.end)
         desired_keys.add(key)
         if key not in existing_keys:
@@ -857,6 +857,7 @@ async def _sync_calendar_events(
             del_tasks.append(_async_delete_event(event, delete_service, target))
 
     if del_tasks:
+        LOGGER.debug("Calendar sync: deleting %d obsolete events", len(del_tasks))
         await asyncio.gather(*del_tasks, return_exceptions=True)
     deleted = deleted_count[0]
     if deleted > 0:
