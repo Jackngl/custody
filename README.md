@@ -4,7 +4,7 @@
 
 **Home Assistant integration for intelligent shared custody management**
 
-[![Version](https://img.shields.io/badge/version-1.8.86-blue.svg)](https://github.com/Jackngl/custody/releases)
+[![Version](https://img.shields.io/badge/version-1.8.87-blue.svg)](https://github.com/Jackngl/custody/releases)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)](https://www.home-assistant.io/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
