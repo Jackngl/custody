@@ -480,8 +480,8 @@ class CustodyScheduleManager:
 
         # 6. Merge in priority order: vacation windows (highest), then custom, then filtered pattern
         merged = vacation_display_windows + custom_windows + filtered_pattern_windows
-        # Filtrer les fenêtres qui se terminent dans le passé (avec marge de 365 jours pour l'historique)
-        return [window for window in merged if window.end > now - timedelta(days=365)]
+        # Filtrer les fenêtres qui se terminent dans le passé (avec marge de 730 jours pour l'historique)
+        return [window for window in merged if window.end > now - timedelta(days=730)]
 
     def _build_parental_day_windows(self, now: datetime) -> list[CustodyWindow]:
         """Automatically create windows for Mother's day and Father's day."""
@@ -529,8 +529,8 @@ class CustodyScheduleManager:
             return []
 
         windows: list[CustodyWindow] = []
-        horizon_end = now.date() + timedelta(days=365)
-        range_start = now.date() - timedelta(days=365)
+        horizon_end = now.date() + timedelta(days=730)
+        range_start = now.date() - timedelta(days=730)
 
         for item in exceptions:
             try:
@@ -679,7 +679,7 @@ class CustodyScheduleManager:
             # Ajuster le pointer pour commencer avant ou à la date actuelle
             # Si le pointer est trop loin dans le passé, avancer jusqu'à une semaine proche de maintenant
             # On avance de 2 semaines à la fois pour respecter l'alternance
-            while pointer < now - timedelta(days=365):
+            while pointer < now - timedelta(days=730):
                 pointer += timedelta(days=14)  # Sauter 2 semaines (alternance)
                 # Vérifier que le pointer a toujours la bonne parité
                 if pointer.isocalendar()[1] % 2 != target_parity:
@@ -760,7 +760,7 @@ class CustodyScheduleManager:
             )
             target_parity = 0 if reference_year == "even" else 1  # 0 = even, 1 = odd
 
-            while pointer < now - timedelta(days=365):
+            while pointer < now - timedelta(days=730):
                 pointer += timedelta(days=14)
                 if pointer.isocalendar()[1] % 2 != target_parity:
                     pointer += timedelta(days=7)

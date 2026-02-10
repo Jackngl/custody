@@ -162,9 +162,12 @@ class OpenHolidaysProvider(BaseHolidayProvider):
                 "validTo": valid_to,
             }
 
-            # If zone is specified (Subdivision), add it (Canton for CH, Community for BE)
+            # If zone is specified (Subdivision/Group), add it (Canton for CH, Community for BE)
             if zone and zone not in ["FR", "BE", "CH", "LU", "A", "B", "C", "Corse", "DOM-TOM"]:
-                params["subdivisionCode"] = zone
+                if country == "BE":
+                    params["groupCode"] = zone
+                else:
+                    params["subdivisionCode"] = zone
 
             try:
                 async with self.session.get(base_url, params=params) as resp:
