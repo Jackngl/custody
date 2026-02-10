@@ -297,7 +297,9 @@ class CustodyScheduleManager:
 
             # No scheduled movements in full custody
             next_arrival = None
+            next_arrival_label = None
             next_departure = None
+            next_departure_label = None
             days_remaining = None
 
             # Determine current period (still useful)
