@@ -1156,11 +1156,11 @@ class CustodyScheduleManager:
         # we might need to go to the NEXT one to cover the weekend.
         # But if it ends on Monday 00:00 (FR), we want the previous Sunday.
 
-        if end_dt.weekday() == 0 and end_dt.hour == 0:
-            # Case France: Ends Monday 00:00 -> Effective end is the previous Sunday/Monday
-            # We go back to the nearest target_end_weekday
-            while effective_end_date.weekday() != target_end_weekday:
-                effective_end_date -= timedelta(days=1)
+        if end_dt.hour == 0 and end_dt.minute == 0:
+            # Any holiday ending at 00:00 (like in the French API) is a school reprise day.
+            # For the end of the holiday, the "reprise" itself is the transition back to the school routine.
+            # We DON'T shift to target_end_weekday here, because we want the child back for school morning.
+            pass
         else:
             # Case BE/CH/LU: Ends Friday or Saturday -> Effective end is the following Sunday/Monday
             while effective_end_date.weekday() != target_end_weekday:
