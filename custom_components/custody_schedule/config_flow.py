@@ -427,9 +427,9 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         if show_start_day:
-            schema_dict[vol.Required(CONF_START_DAY, default=self._data.get(CONF_START_DAY, "monday"))] = (
-                _start_day_selector()
-            )
+            schema_dict[
+                vol.Required(CONF_START_DAY, default=self._data.get(CONF_START_DAY, "monday"))
+            ] = _start_day_selector()
 
         # Add weekend start day selector for alternate_weekend
         if show_weekend_start:
@@ -566,27 +566,27 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Vacation split modes and parental roles are only relevant for coparenting (custody enabled)
         if enable_custody:
-            schema_dict[vol.Required(CONF_VACATION_SPLIT_MODE, default=vacation_split_default)] = (
-                _vacation_split_selector()
-            )
+            schema_dict[
+                vol.Required(CONF_VACATION_SPLIT_MODE, default=vacation_split_default)
+            ] = _vacation_split_selector()
             schema_dict[
                 vol.Required(CONF_SUMMER_SPLIT_MODE, default=self._data.get(CONF_SUMMER_SPLIT_MODE, "half"))
             ] = _summer_split_selector()
 
         # Alsace-Moselle only for France
         if country == "FR":
-            schema_dict[vol.Optional(CONF_ALSACE_MOSELLE, default=self._data.get(CONF_ALSACE_MOSELLE, False))] = (
-                selector.BooleanSelector()
-            )
+            schema_dict[
+                vol.Optional(CONF_ALSACE_MOSELLE, default=self._data.get(CONF_ALSACE_MOSELLE, False))
+            ] = selector.BooleanSelector()
 
         # Parental role only if custody enabled
         if enable_custody:
-            schema_dict[vol.Required(CONF_PARENTAL_ROLE, default=self._data.get(CONF_PARENTAL_ROLE, "none"))] = (
-                _parental_role_selector()
-            )
-            schema_dict[vol.Optional(CONF_AUTO_PARENT_DAYS, default=self._data.get(CONF_AUTO_PARENT_DAYS, True))] = (
-                selector.BooleanSelector()
-            )
+            schema_dict[
+                vol.Required(CONF_PARENTAL_ROLE, default=self._data.get(CONF_PARENTAL_ROLE, "none"))
+            ] = _parental_role_selector()
+            schema_dict[
+                vol.Optional(CONF_AUTO_PARENT_DAYS, default=self._data.get(CONF_AUTO_PARENT_DAYS, True))
+            ] = selector.BooleanSelector()
 
         return self.async_show_form(step_id="vacations_details", data_schema=vol.Schema(schema_dict))
 
@@ -754,9 +754,9 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
 
         # Only show start_day for custody types that use it
         if show_start_day:
-            schema_dict[vol.Required(CONF_START_DAY, default=data.get(CONF_START_DAY, "monday"))] = (
-                _start_day_selector()
-            )
+            schema_dict[
+                vol.Required(CONF_START_DAY, default=data.get(CONF_START_DAY, "monday"))
+            ] = _start_day_selector()
 
         schema = vol.Schema(schema_dict)
         return self.async_show_form(
@@ -1169,27 +1169,27 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
 
         # Vacation split modes and parental roles are only relevant for coparenting (custody enabled)
         if enable_custody:
-            schema_dict[vol.Required(CONF_VACATION_SPLIT_MODE, default=vacation_split_default)] = (
-                _vacation_split_selector()
-            )
+            schema_dict[
+                vol.Required(CONF_VACATION_SPLIT_MODE, default=vacation_split_default)
+            ] = _vacation_split_selector()
             schema_dict[
                 vol.Required(CONF_SUMMER_SPLIT_MODE, default=self._data.get(CONF_SUMMER_SPLIT_MODE, "half"))
             ] = _summer_split_selector()
 
         # Alsace-Moselle only for France
         if country == "FR":
-            schema_dict[vol.Optional(CONF_ALSACE_MOSELLE, default=self._data.get(CONF_ALSACE_MOSELLE, False))] = (
-                selector.BooleanSelector()
-            )
+            schema_dict[
+                vol.Optional(CONF_ALSACE_MOSELLE, default=self._data.get(CONF_ALSACE_MOSELLE, False))
+            ] = selector.BooleanSelector()
 
         # Parental role only if custody enabled
         if enable_custody:
-            schema_dict[vol.Required(CONF_PARENTAL_ROLE, default=self._data.get(CONF_PARENTAL_ROLE, "none"))] = (
-                _parental_role_selector()
-            )
-            schema_dict[vol.Optional(CONF_AUTO_PARENT_DAYS, default=self._data.get(CONF_AUTO_PARENT_DAYS, True))] = (
-                selector.BooleanSelector()
-            )
+            schema_dict[
+                vol.Required(CONF_PARENTAL_ROLE, default=self._data.get(CONF_PARENTAL_ROLE, "none"))
+            ] = _parental_role_selector()
+            schema_dict[
+                vol.Optional(CONF_AUTO_PARENT_DAYS, default=self._data.get(CONF_AUTO_PARENT_DAYS, True))
+            ] = selector.BooleanSelector()
 
         return self.async_show_form(step_id="vacations_details", data_schema=vol.Schema(schema_dict))
 
