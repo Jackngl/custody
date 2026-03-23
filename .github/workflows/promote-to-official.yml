@@ -24,14 +24,30 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
+      - name: Validate promotion token
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.OFFICIAL_REPO_TOKEN }}" ]; then
+            echo "::error::OFFICIAL_REPO_TOKEN is empty or unavailable."
+            echo "::error::Add it in repository or production environment secrets."
+            exit 1
+          fi
+
       - name: Add official remote
         run: |
-          git remote add official "https://x-access-token:${{ secrets.OFFICIAL_REPO_TOKEN }}@github.com/Jackngl/custody.git"
+          set -euo pipefail
+          AUTHED_URL="https://x-access-token:${{ secrets.OFFICIAL_REPO_TOKEN }}@github.com/Jackngl/custody.git"
+          if git remote get-url official >/dev/null 2>&1; then
+            git remote set-url official "$AUTHED_URL"
+          else
+            git remote add official "$AUTHED_URL"
+          fi
           git fetch official
 
       - name: Validate fast-forward merge
         id: validate
         run: |
+          set -euo pipefail
           echo "::group::Checking if push would be fast-forward"
 
           # Check if main can be fast-forwarded
@@ -55,6 +71,7 @@ jobs:
       - name: Push to official repository
         if: steps.validate.outputs.diverged == 'false'
         run: |
+          set -euo pipefail
           echo "::group::Pushing to official repository"
 
           # Push main branch (NO --force)
@@ -88,6 +105,7 @@ jobs:
 
       - name: Verify promotion
         run: |
+          set -euo pipefail
           echo "::group::Verifying promotion"
           git fetch official
 
