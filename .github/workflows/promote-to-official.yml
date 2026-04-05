@@ -134,6 +134,53 @@ jobs:
           fi
           echo "::endgroup::"
 
+      - name: Create GitHub release on official repository
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.OFFICIAL_REPO_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          echo "::group::GitHub Release on official (Jackngl/custody)"
+
+          if [[ "$EVENT_NAME" == "release" ]]; then
+            TAG="$RELEASE_TAG"
+          else
+            VERSION=$(jq -r '.version' custom_components/custody_schedule/manifest.json)
+            TAG="v${VERSION}"
+          fi
+
+          if [[ -z "$TAG" || "$TAG" == "v" ]]; then
+            echo "::error::Could not determine release tag"
+            exit 1
+          fi
+
+          if ! git ls-remote official "refs/tags/${TAG}" | grep -q .; then
+            echo "::notice::Tag $TAG not found on official — skip Release (create/push the tag first)"
+            echo "::endgroup::"
+            exit 0
+          fi
+
+          if gh release view "$TAG" --repo Jackngl/custody >/dev/null 2>&1; then
+            echo "Release $TAG already exists on official — nothing to do"
+            echo "::endgroup::"
+            exit 0
+          fi
+
+          if [[ "$EVENT_NAME" == "release" && -n "${RELEASE_BODY:-}" ]]; then
+            printf '%s\n' "$RELEASE_BODY" > /tmp/official-release-notes.md
+            TITLE="${RELEASE_NAME:-$TAG}"
+            gh release create "$TAG" --repo Jackngl/custody --title "$TITLE" --notes-file /tmp/official-release-notes.md
+          else
+            gh release create "$TAG" --repo Jackngl/custody --title "$TAG" --generate-notes
+          fi
+
+          echo "✓ Created GitHub Release $TAG on Jackngl/custody"
+          echo "::endgroup::"
+
       - name: Rollback instructions
         if: failure()
         run: |
