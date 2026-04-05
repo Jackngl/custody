@@ -9,100 +9,6 @@ from typing import Any, Iterable
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
-
-def _easter_date(year: int) -> date:
-    """Calculate Easter Sunday date using the Anonymous Gregorian algorithm."""
-    a = year % 19
-    b = year // 100
-    c = year % 100
-    d = b // 4
-    e = b % 4
-    f = (b + 8) // 25
-    g = (b - f + 1) // 3
-    h = (19 * a + b - d - g + 15) % 30
-    i = c // 4
-    k = c % 4
-    L = (32 + 2 * e + 2 * i - h - k) % 7
-    m = (a + 11 * h + 22 * L) // 451
-    month = (h + L - 7 * m + 114) // 31
-    day = ((h + L - 7 * m + 114) % 31) + 1
-    return date(year, month, day)
-
-
-def get_public_holidays(year: int, country: str = "FR", include_alsace_moselle: bool = False) -> set[date]:
-    """Return set of public holidays for a given year and country.
-
-    Currently supports: France (FR).
-    """
-    holidays = set()
-
-    if country == "FR":
-        # Fixed holidays
-        holidays.add(date(year, 1, 1))  # New Year
-        holidays.add(date(year, 5, 1))  # Labor Day
-        holidays.add(date(year, 5, 8))  # Victory 1945
-        holidays.add(date(year, 7, 14))  # National Day
-        holidays.add(date(year, 8, 15))  # Assumption
-        holidays.add(date(year, 11, 1))  # All Saints
-        holidays.add(date(year, 11, 11))  # Armistice
-        holidays.add(date(year, 12, 25))  # Christmas
-
-        # Alsace-Moselle specific
-        if include_alsace_moselle:
-            holidays.add(date(year, 12, 26))
-
-        # Variable
-        easter = _easter_date(year)
-        holidays.add(easter + timedelta(days=1))  # Easter Monday
-        holidays.add(easter + timedelta(days=39))  # Ascension
-        holidays.add(easter + timedelta(days=50))  # Pentecost Monday
-
-        if include_alsace_moselle:
-            holidays.add(easter - timedelta(days=2))  # Good Friday
-
-    return holidays
-
-
-def get_parent_days(year: int, country: str = "FR") -> dict[str, date]:
-    """Calculate parent holidays (Mother/Father days).
-
-    Currently supports: France (FR).
-    """
-    # Father's day: 3rd Sunday of June
-    first_june = date(year, 6, 1)
-    days_to_first_sunday = (6 - first_june.weekday()) % 7
-    fathers_day = first_june + timedelta(days=days_to_first_sunday + 14)
-
-    # Mother's day: Last Sunday of May.
-    last_may = date(year, 5, 31)
-    days_back_to_sunday = (last_may.weekday() - 6) % 7
-    mothers_day = last_may - timedelta(days=days_back_to_sunday)
-
-    # Check for Pentecost (Easter + 49 days)
-    # Re-using logic to calculate Easter locally
-    a = year % 19
-    b = year // 100
-    c = year % 100
-    d = b // 4
-    e = b % 4
-    f = (b + 8) // 25
-    g = (b - f + 1) // 3
-    h = (19 * a + b - d - g + 15) % 30
-    i = c // 4
-    k = c % 4
-    L = (32 + 2 * e + 2 * i - h - k) % 7
-    m = (a + 11 * h + 22 * L) // 451
-    month = (h + L - 7 * m + 114) // 31
-    day = ((h + L - 7 * m + 114) % 31) + 1
-    easter_sunday = date(year, month, day)
-
-    pentecost_sunday = easter_sunday + timedelta(days=49)
-    if mothers_day == pentecost_sunday:
-        mothers_day = mothers_day + timedelta(days=7)
-
-    return {"mother": mothers_day, "father": fathers_day}
-
-
 from .const import (
     ATTR_LOCATION,
     ATTR_NOTES,
@@ -132,7 +38,37 @@ from .const import (
     DEFAULT_COUNTRY,
     LOGGER,
 )
+from .holiday_bridge import (
+    apply_public_holiday_bridge_after_last_day,
+    apply_public_holiday_bridge_before_weekend_start,
+    easter_sunday,
+    get_public_holidays,
+)
 from .school_holidays import SchoolHolidayClient
+
+
+def get_parent_days(year: int, country: str = "FR") -> dict[str, date]:
+    """Calculate parent holidays (Mother/Father days).
+
+    Currently supports: France (FR).
+    """
+    # Father's day: 3rd Sunday of June
+    first_june = date(year, 6, 1)
+    days_to_first_sunday = (6 - first_june.weekday()) % 7
+    fathers_day = first_june + timedelta(days=days_to_first_sunday + 14)
+
+    # Mother's day: Last Sunday of May.
+    last_may = date(year, 5, 31)
+    days_back_to_sunday = (last_may.weekday() - 6) % 7
+    mothers_day = last_may - timedelta(days=days_back_to_sunday)
+
+    # Check for Pentecost (Easter + 49 days)
+    easter = easter_sunday(year)
+    pentecost_sunday = easter + timedelta(days=49)
+    if mothers_day == pentecost_sunday:
+        mothers_day = mothers_day + timedelta(days=7)
+
+    return {"mother": mothers_day, "father": fathers_day}
 
 
 @dataclass(slots=True)
@@ -702,35 +638,31 @@ class CustodyScheduleManager:
                     # pointer is Monday of the week, so:
                     # pointer is Monday: +4=Fri, +5=Sat, +6=Sun, +7=Mon
                     if weekend_start_day == "saturday":
-                        weekend_start = pointer + timedelta(days=5)  # Saturday
+                        nominal_weekend_start = pointer + timedelta(days=5)  # Saturday
                     else:
-                        weekend_start = pointer + timedelta(days=4)  # Friday (default)
+                        nominal_weekend_start = pointer + timedelta(days=4)  # Friday (default)
 
-                    # Resolve base end day
+                    weekend_start = apply_public_holiday_bridge_before_weekend_start(nominal_weekend_start, holidays)
+
+                    # Resolve base end day (anchor on ISO week Monday)
                     target_end_weekday = WEEKDAY_LOOKUP.get(self._end_day, 6)
                     days_to_end = (target_end_weekday - pointer.weekday()) % 7
                     base_end_date = pointer + timedelta(days=days_to_end)
 
-                    # Check if end falls before start (weekend spanning)
-                    if base_end_date < weekend_start:
+                    # Check if end falls before nominal weekend start (weekend spanning)
+                    if base_end_date < nominal_weekend_start:
                         base_end_date += timedelta(days=7)
 
-                    # Default start/end
                     window_start = weekend_start
-                    window_end = base_end_date
-                    label_suffix = ""
+                    end_after_calculate = self._calculate_end_date(window_start, holidays)
+                    window_end = apply_public_holiday_bridge_after_last_day(end_after_calculate, holidays)
 
-                    # Resolve end date using helper
-                    window_end = self._calculate_end_date(window_start, holidays)
-                    label_suffix = (
-                        " + Holiday"
-                        if (window_end - window_start).days
-                        > (target_end_weekday - pointer.weekday()) % 7
-                        + (7 if (target_end_weekday - pointer.weekday()) % 7 == 0 else 0)
-                        else ""
-                    )
-                    # Simplification of suffix logic for weekends
-                    if window_end.date() != base_end_date.date():
+                    label_suffix = ""
+                    if (
+                        weekend_start.date() != nominal_weekend_start.date()
+                        or window_end.date() != end_after_calculate.date()
+                        or end_after_calculate.date() != base_end_date.date()
+                    ):
                         label_suffix = " + Holiday"
 
                     # Get label from custody type definition
@@ -786,12 +718,10 @@ class CustodyScheduleManager:
                     base_end_date = monday + timedelta(days=days_to_end)
 
                     window_start = monday
-                    window_end = self._calculate_end_date(window_start, holidays)
+                    end_after_calculate = self._calculate_end_date(window_start, holidays)
+                    window_end = apply_public_holiday_bridge_after_last_day(end_after_calculate, holidays)
 
-                    label_suffix = ""
-                    # Extension check for label suffix
-                    if window_end.date() > base_end_date.date():
-                        label_suffix = " + Holiday"
+                    label_suffix = " + Holiday" if window_end.date() > base_end_date.date() else ""
 
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")

@@ -356,6 +356,8 @@ The application **automatically extends** custody weekends and weeks when a publ
 | **Friday holiday** | Fri 16:15 → Sun 19:00 | **Thu 16:15** → Sun 19:00 |
 | **Bridge (both)** | Fri 16:15 → Sun 19:00 | **Thu 16:15 → Mon 19:00** |
 
+**How it is calculated:** For **alternate weekends** and **alternate weeks (parity)**, the integration uses your country’s built-in public holiday set (France: fixed dates plus Easter Monday, Ascension, Pentecost Monday, and optional Alsace–Moselle days). If the **calendar day after** your configured end day (often Sunday) is a public holiday—e.g. Easter Monday when Sunday is not in the legal list—custody is extended through that day at **departure time**. If the **first day** of the weekend (Friday or Saturday, per your setting) is a public holiday, the start moves **one day earlier** at each step (e.g. Labour Day Friday → Thursday pickup at **arrival time**) until the start day is not a holiday.
+
 ### Examples
 
 **Example 1: Easter Monday (April 21, 2025)**

@@ -358,6 +358,8 @@ L'application **étend automatiquement** les weekends et semaines de garde lorsq
 | **Vendredi férié** | Ven 16:15 → Dim 19:00 | **Jeu 16:15** → Dim 19:00 |
 | **Pont (les deux)** | Ven 16:15 → Dim 19:00 | **Jeu 16:15 → Lun 19:00** |
 
+**Calcul dans l’intégration :** pour les **week-ends alternés** et les **semaines alternées (parité)**, les jours fériés pris en compte sont ceux du pays configuré (France : dates fixes + lundi de Pâques, Ascension, lundi de Pentecôte, option Alsace-Moselle). Si le **lendemain** du dernier jour de garde prévu (souvent le dimanche) est férié — par exemple le lundi de Pâques alors que le dimanche n’est pas férié au sens légal — la garde est prolongée jusqu’à ce jour à l’**heure de départ**. Si le **premier jour** du week-end (vendredi ou samedi selon le réglage) est férié, le début recule **d’un jour** à chaque étape (ex. 1er mai un vendredi → reprise le jeudi à l’**heure d’arrivée**) jusqu’à un jour de début non férié.
+
 ### Exemples
 
 **Exemple 1 : Lundi de Pâques (21 avril 2025)**
