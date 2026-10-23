@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Iterable
 
 from homeassistant.core import HomeAssistant
@@ -1081,8 +1081,12 @@ class CustodyScheduleManager:
           even if the API indicates a Monday reprise at 00:00.
         - Midpoint: exact half between effective start and effective end (midpoint time overrides standard times).
         """
-        start_dt = dt_util.as_local(holiday.start)
-        end_dt = dt_util.as_local(holiday.end)
+        # Keep the provider's timezone (e.g. Europe/Paris for the FR dataset): the
+        # "school resume day at 00:00" marker must be evaluated in the timezone of the
+        # school calendar, not the Home Assistant one, otherwise an HA instance set to
+        # another zone (UTC, ...) sees "Sunday 23:00" and extends custody to Monday.
+        start_dt = holiday.start if holiday.start.tzinfo else dt_util.as_local(holiday.start)
+        end_dt = holiday.end if holiday.end.tzinfo else dt_util.as_local(holiday.end)
 
         start_date = start_dt.date()
         end_date = end_dt.date()
@@ -1132,7 +1136,9 @@ class CustodyScheduleManager:
         # This resolves the 01:31 or 13:31 issues while keeping the duration fair
         seconds = exact_midpoint.timestamp()
         rounded_seconds = round(seconds / 1800) * 1800
-        midpoint = dt_util.as_local(datetime.fromtimestamp(rounded_seconds))
+        # Build from an aware UTC datetime: a naive fromtimestamp() would be expressed in the
+        # OS timezone (often UTC in Docker) and then misinterpreted as HA-local by as_local().
+        midpoint = dt_util.as_local(datetime.fromtimestamp(rounded_seconds, tz=timezone.utc))
 
         return effective_start, effective_end, midpoint
 

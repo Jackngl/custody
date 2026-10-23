@@ -15,6 +15,12 @@ from homeassistant.util import dt as dt_util
 
 from .const import HOLIDAY_API, LOGGER
 
+# The French Education Nationale dataset expresses dates as Paris local midnight
+# (e.g. "2026-11-01T23:00:00+00:00" == Monday 2026-11-02 00:00 Europe/Paris).
+# We anchor them to Europe/Paris so the "school resume day at 00:00" semantics
+# survive regardless of the Home Assistant time zone.
+FRANCE_TZ = dt_util.get_time_zone("Europe/Paris")
+
 
 @dataclass(slots=True)
 class SchoolHoliday:
@@ -129,8 +135,8 @@ class FranceEducationProvider(BaseHolidayProvider):
                             SchoolHoliday(
                                 name=name,
                                 zone=zone,
-                                start=dt_util.as_local(start),
-                                end=dt_util.as_local(end),
+                                start=start.astimezone(FRANCE_TZ) if FRANCE_TZ else dt_util.as_local(start),
+                                end=end.astimezone(FRANCE_TZ) if FRANCE_TZ else dt_util.as_local(end),
                             )
                         )
             except Exception as err:

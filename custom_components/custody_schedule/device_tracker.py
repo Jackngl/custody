@@ -53,7 +53,7 @@ class CustodyDeviceTracker(CoordinatorEntity[CustodyComputation], TrackerEntity)
             name=child_name_display,
             manufacturer="Custody",
             model="Custody Planning",
-            sw_version=entry.version if hasattr(entry, "version") else "1.8.31",
+            sw_version="1.8.31",
         )
         self.entity_id = f"device_tracker.{slugify(child_name_normalized)}_tracker"
         photo = entry.data.get(CONF_PHOTO)
