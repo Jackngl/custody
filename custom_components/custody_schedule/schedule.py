@@ -837,19 +837,24 @@ class CustodyScheduleManager:
 
         for holiday in holidays:
             start, end, midpoint = self._effective_holiday_bounds(holiday)
-            if end < now:
-                continue
 
             # Always add a filter window covering the full effective vacation period.
             # This enforces: vacances scolaires > garde normale (no weekend/week pattern windows inside holidays).
-            windows.append(
-                CustodyWindow(
-                    start=start,
-                    end=end,
-                    label=f"{holiday.name} - Full period (Filter)",
-                    source="vacation_filter",
+            # The filter must be kept for *past* holidays too (same history margin as _build_windows):
+            # otherwise, once the vacation ends, a pattern window that started inside it and was
+            # extended by a public holiday bridge (e.g. 1st Nov) would re-appear and extend custody.
+            if end > now - timedelta(days=730):
+                windows.append(
+                    CustodyWindow(
+                        start=start,
+                        end=end,
+                        label=f"{holiday.name} - Full period (Filter)",
+                        source="vacation_filter",
+                    )
                 )
-            )
+
+            if end < now:
+                continue
 
             # Automatic vacation rule based on year parity + split mode
             # Get reference_year to determine which parent gets vacations this year
