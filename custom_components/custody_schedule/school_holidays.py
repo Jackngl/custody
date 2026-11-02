@@ -283,6 +283,12 @@ class SchoolHolidayClient:
                             start_dt = dt_util.parse_datetime(h.get("start", ""))
                             end_dt = dt_util.parse_datetime(h.get("end", ""))
                             if start_dt and end_dt:
+                                # Entries written by older versions were stored in the HA
+                                # time zone; re-anchor FR dates to Europe/Paris so the
+                                # "school resume at 00:00" marker is detected correctly.
+                                if country.upper() == "FR" and FRANCE_TZ:
+                                    start_dt = start_dt.astimezone(FRANCE_TZ)
+                                    end_dt = end_dt.astimezone(FRANCE_TZ)
                                 holidays.append(
                                     SchoolHoliday(
                                         name=h.get("name", "Vacances"),
