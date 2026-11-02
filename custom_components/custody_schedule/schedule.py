@@ -552,7 +552,11 @@ class CustodyScheduleManager:
                     else:
                         if frag.start < vac_start:
                             next_fragments.append(CustodyWindow(frag.start, vac_start, frag.label, frag.source))
-                        if frag.end > vac_end:
+                        # A pattern window that *starts* inside a vacation is fully absorbed by the
+                        # vacation rule: never keep its tail. This notably prevents a public-holiday
+                        # bridge (e.g. 1st Nov during Toussaint) from extending custody past the
+                        # effective vacation end (Sunday evening).
+                        if frag.end > vac_end and frag.start < vac_start:
                             next_fragments.append(CustodyWindow(vac_end, frag.end, frag.label, frag.source))
                 fragments = next_fragments
             current_active_windows.extend(fragments)
